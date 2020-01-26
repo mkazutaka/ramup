@@ -23,15 +23,4 @@ impl DefaultApplicationConfig {
             },
         }
     }
-
-    pub fn create(name: &String) -> DefaultApplicationConfig {
-        match name.as_str() {
-            "example" => Example::create(),
-            _ => DefaultApplicationConfig {
-                name: "".to_string(),
-                restart: false,
-                files: vec![],
-            },
-        }
-    }
 }
