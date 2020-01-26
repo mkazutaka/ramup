@@ -1,5 +1,6 @@
 use crate::applications::DefaultApplicationConfig;
 use crate::config::UserConfig;
+use shellexpand;
 use std::path::Path;
 use std::process::Command;
 
@@ -40,39 +41,30 @@ impl Ramup {
 
     pub fn backup(&mut self) {
         for user_config in &mut self.user_config.applications {
-            let default = DefaultApplicationConfig::create(&user_config.name);
-            user_config.set_restart(default.restart);
-            user_config.set_files(default.files);
-
             match &user_config.files {
-                Some(val) => {
-                    for path in val {
-                        let path = Path::new(path);
-
-                        let a = path.to_str().unwrap();
+                Some(files) => {
+                    for path in files {
+                        let path = shellexpand::tilde(path).to_string();
+                        let path = Path::new(path.as_str());
 
                         let dir_path = path.parent().unwrap();
                         let dir_path = dir_path.to_str().unwrap();
-
                         let app_path = path.to_str().unwrap();
-
                         let ram_dir_path = format!("/Volumes/RAMUpDisk{}", dir_path);
                         let ram_app_path = format!("/Volumes/RAMUpDisk{}", app_path);
 
-                        if path.is_dir() {
-                            Command::new("mkdir")
-                                .args(&["-p", &ram_dir_path])
-                                .output()
-                                .expect("mkdir is failed");
-                            Command::new("mv")
-                                .args(&[app_path, &ram_app_path])
-                                .output()
-                                .expect("mv is failed");
-                            Command::new("ln")
-                                .args(&["-s", &ram_app_path, app_path])
-                                .output()
-                                .expect("ln is failed");
-                        }
+                        Command::new("mkdir")
+                            .args(&["-p", &ram_dir_path])
+                            .output()
+                            .expect("mkdir is failed");
+                        Command::new("mv")
+                            .args(&[app_path, &ram_app_path])
+                            .output()
+                            .expect("mv is failed");
+                        Command::new("ln")
+                            .args(&["-s", &ram_app_path, app_path])
+                            .output()
+                            .expect("ln is failed");
                     }
                 }
                 None => {}
@@ -82,19 +74,15 @@ impl Ramup {
 
     pub fn restore(&self) {
         for user_config in &self.user_config.applications {
-            let default = DefaultApplicationConfig::create(&user_config.name);
             match &user_config.files {
-                Some(val) => {
-                    for path in val {
-                        let path = Path::new(path);
-
-                        let a = path.to_str().unwrap();
+                Some(files) => {
+                    for path in files {
+                        let path = shellexpand::tilde(path).to_string();
+                        let path = Path::new(path.as_str());
 
                         let dir_path = path.parent().unwrap();
                         let dir_path = dir_path.to_str().unwrap();
-
                         let app_path = path.to_str().unwrap();
-
                         let ram_dir_path = format!("/Volumes/RAMUpDisk{}", dir_path);
                         let ram_app_path = format!("/Volumes/RAMUpDisk{}", app_path);
 
@@ -119,13 +107,3 @@ impl Ramup {
         }
     }
 }
-
-//impl Drop for Ramup {
-//    fn drop(&mut self) {
-//        self.restore();
-//        Command::new("hdiutil")
-//            .args(&["detach", &self.mount_point])
-//            .output()
-//            .expect("detach is failed");
-//    }
-//}

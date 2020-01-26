@@ -13,9 +13,9 @@ pub struct DefaultApplicationConfig {
 }
 
 impl DefaultApplicationConfig {
-    pub fn create(name: &String) -> DefaultApplicationConfig {
+    pub fn from(name: &String) -> DefaultApplicationConfig {
         match name.as_str() {
-            "example" => DefaultApplicationConfig::new_example(),
+            "example" => Example::create(),
             _ => DefaultApplicationConfig {
                 name: "".to_string(),
                 restart: false,
@@ -24,11 +24,14 @@ impl DefaultApplicationConfig {
         }
     }
 
-    pub fn new_example() -> Self {
-        DefaultApplicationConfig {
-            name: "example".into(),
-            restart: false,
-            files: vec!["/Users/mkazutaka/example".into()],
+    pub fn create(name: &String) -> DefaultApplicationConfig {
+        match name.as_str() {
+            "example" => Example::create(),
+            _ => DefaultApplicationConfig {
+                name: "".to_string(),
+                restart: false,
+                files: vec![],
+            },
         }
     }
 }

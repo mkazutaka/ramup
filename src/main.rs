@@ -16,6 +16,7 @@ fn main() {
         .get_matches();
 
     let user_config = config::UserConfig::new();
+    println!("{:?}", user_config);
     let mut ramup = Ramup::new(user_config);
 
     ramup.create();
