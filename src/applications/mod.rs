@@ -12,14 +12,14 @@ pub struct DefaultApplicationConfig {
 
 #[derive(RustEmbed)]
 #[folder = "applications/"]
-struct Assets;
+struct Applications;
 
 impl DefaultApplicationConfig {
     pub fn from(name: &String) -> DefaultApplicationConfig {
-        for file in Assets::iter() {
+        for file in Applications::iter() {
             if format!("{}.toml", name) == file.as_ref() {
                 let file = file.as_ref();
-                let file = Assets::get(file).unwrap();
+                let file = Applications::get(file).unwrap();
                 let file = file.as_ref();
 
                 let toml_content = std::str::from_utf8(file).unwrap();
