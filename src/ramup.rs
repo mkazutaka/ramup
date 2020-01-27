@@ -1,4 +1,5 @@
 use crate::config::Config;
+use crate::utils;
 use clap::Result;
 use fs_extra::dir::{move_dir, CopyOptions};
 use shellexpand;
@@ -12,33 +13,15 @@ pub struct Ramup {
 }
 
 impl Ramup {
-    pub fn new(user_config: Config) -> Ramup {
+    pub fn new(config: Config) -> Ramup {
         Ramup {
-            config: user_config,
+            config,
             mount_point: "".to_string(),
         }
     }
 
-    fn set_mount_point(&mut self, mount_point: impl Into<String>) {
-        self.mount_point = mount_point.into();
-    }
-
-    /// diskutil erasevolume HFS+ RAMUp `hdiutil attach -nomount ram://4194304`
     pub fn create(&mut self) -> Result<()> {
-        let image = format!("ram://{}", self.config.ram.size);
-        let mount_point = Command::new("hdiutil")
-            .args(&["attach", "-nomount", &image])
-            .output()?;
-
-        let mount_point = String::from_utf8(mount_point.stdout).unwrap();
-        let mount_point = mount_point.trim();
-
-        let volume = self.config.ram.name.as_str();
-        Command::new("diskutil")
-            .args(&["erasevolume", "HFS+", volume, mount_point])
-            .output()?;
-
-        self.set_mount_point(mount_point);
+        self.mount_point = utils::mount(&self.config.ram.size, &self.config.ram.name)?;
         Ok(())
     }
 

@@ -1,6 +1,7 @@
 mod application;
 mod config;
 mod ramup;
+mod utils;
 
 use crate::ramup::Ramup;
 use clap::{App, SubCommand};
@@ -16,7 +17,6 @@ fn main() {
         .get_matches();
 
     let user_config = config::Config::new();
-    println!("{:?}", user_config);
     let mut ramup = Ramup::new(user_config);
 
     ramup.create().unwrap();
