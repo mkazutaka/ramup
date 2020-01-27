@@ -1,0 +1,5 @@
+name = "google_chrome"
+restart = false
+paths = [
+  "~/Library/Caches/Google/Chrome"
+]

@@ -24,7 +24,7 @@ impl Ramup {
     /// diskutil erasevolume HFS+ RAMUp `hdiutil attach -nomount ram://4194304`
     pub fn create(&mut self) {
         let mount_point = Command::new("hdiutil")
-            .args(&["attach", "-nomount", "ram://4194304"])
+            .args(&["attach", "-nomount", "ram://8388608"])
             .output()
             .expect("attach is failed");
 
@@ -44,6 +44,7 @@ impl Ramup {
             match &user_config.paths {
                 Some(paths) => {
                     for path in paths {
+                        println!("start: {}", path.as_str());
                         let path = shellexpand::tilde(path).to_string();
                         let path = Path::new(path.as_str());
 
@@ -86,20 +87,18 @@ impl Ramup {
                         let ram_dir_path = format!("/Volumes/RAMUpDisk{}", dir_path);
                         let ram_app_path = format!("/Volumes/RAMUpDisk{}", app_path);
 
-                        if path.is_dir() {
-                            Command::new("unlink")
-                                .args(&[&app_path])
-                                .output()
-                                .expect("unlink is failed");
-                            Command::new("mv")
-                                .args(&[&ram_app_path, app_path])
-                                .output()
-                                .expect("mv is failed");
-                            Command::new("hdiutil")
-                                .args(&["detach", &self.mount_point])
-                                .output()
-                                .expect("detach is failed");
-                        }
+                        Command::new("unlink")
+                            .args(&[&app_path])
+                            .output()
+                            .expect("unlink is failed");
+                        Command::new("mv")
+                            .args(&[&ram_app_path, app_path])
+                            .output()
+                            .expect("mv is failed");
+                        Command::new("hdiutil")
+                            .args(&["detach", &self.mount_point])
+                            .output()
+                            .expect("detach is failed");
                     }
                 }
                 None => {}
