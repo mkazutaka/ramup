@@ -1,11 +1,11 @@
 pub mod example;
 
-use crate::applications::example::Example;
+use crate::applications::example::EXAMPLE_TOML;
 use crate::config::UserApplicationConfig;
 use clap::App;
+use serde::Deserialize;
 
-trait Application {}
-
+#[derive(Deserialize)]
 pub struct DefaultApplicationConfig {
     pub name: String,
     pub restart: bool,
@@ -14,13 +14,18 @@ pub struct DefaultApplicationConfig {
 
 impl DefaultApplicationConfig {
     pub fn from(name: &String) -> DefaultApplicationConfig {
-        match name.as_str() {
-            "example" => Example::create(),
-            _ => DefaultApplicationConfig {
-                name: "".to_string(),
-                restart: false,
-                files: vec![],
-            },
-        }
+        let toml = match name.as_str() {
+            "example" => EXAMPLE_TOML,
+            _ => {
+                r#"
+name = ""
+restart = false
+files = []
+            "#
+            }
+        };
+
+        let c: DefaultApplicationConfig = toml::from_str(toml).unwrap();
+        c
     }
 }

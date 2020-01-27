@@ -1,13 +1,9 @@
 use crate::applications::DefaultApplicationConfig;
 
-pub struct Example {}
-
-impl Example {
-    pub fn create() -> DefaultApplicationConfig {
-        DefaultApplicationConfig {
-            name: "example".into(),
-            restart: false,
-            files: vec!["~/example".into()],
-        }
-    }
-}
+pub static EXAMPLE_TOML: &'static str = r#"
+name = "example"
+restart = false
+files = [
+  "~/example"
+]
+"#;
