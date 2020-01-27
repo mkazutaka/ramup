@@ -16,9 +16,9 @@ pub struct ApplicationFile {
 }
 
 impl ApplicationFile {
-    pub fn from(name: &String) -> ApplicationFile {
+    pub fn from(file_name: &String) -> ApplicationFile {
         for file in ApplicationFiles::iter() {
-            if format!("{}.toml", name) == file.as_ref() {
+            if format!("{}.toml", file_name) == file.as_ref() {
                 let file = file.as_ref();
                 let file = ApplicationFiles::get(file).unwrap();
                 let file = file.as_ref();
