@@ -6,10 +6,10 @@ use crate::ramup::Ramup;
 use clap::{App, SubCommand};
 use ctrlc;
 use std::process;
-use std::{error::Error, thread, time::Duration};
+use std::{thread, time::Duration};
 
 fn main() {
-    let matches = App::new("ramup")
+    let _matches = App::new("ramup")
         .version("v0.1.0")
         .subcommand(SubCommand::with_name("backup").about("backup on RAM Disk"))
         .subcommand(SubCommand::with_name("restore").about("restore from RAM Disk"))
@@ -28,7 +28,8 @@ fn main() {
         ramup.restore();
         println!("restore finished");
         process::exit(1)
-    });
+    })
+    .unwrap();
 
     loop {
         thread::sleep(Duration::from_secs(10));

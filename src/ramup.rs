@@ -1,6 +1,7 @@
-use crate::application::ApplicationConfig;
 use crate::config::UserConfig;
+use fs_extra::dir::{move_dir, CopyOptions};
 use shellexpand;
+use std::fs;
 use std::path::Path;
 use std::process::Command;
 
@@ -54,18 +55,12 @@ impl Ramup {
                         let ram_dir_path = format!("/Volumes/RAMUpDisk{}", dir_path);
                         let ram_app_path = format!("/Volumes/RAMUpDisk{}", app_path);
 
-                        Command::new("mkdir")
-                            .args(&["-p", &ram_dir_path])
-                            .output()
-                            .expect("mkdir is failed");
-                        Command::new("mv")
-                            .args(&[app_path, &ram_app_path])
-                            .output()
-                            .expect("mv is failed");
-                        Command::new("ln")
-                            .args(&["-s", &ram_app_path, app_path])
-                            .output()
-                            .expect("ln is failed");
+                        let mut option = CopyOptions::new();
+                        option.copy_inside = true;
+
+                        fs::create_dir_all(&ram_dir_path).unwrap();
+                        move_dir(&app_path, &ram_dir_path, &option).unwrap();
+                        std::os::unix::fs::symlink(&ram_app_path, &app_path).unwrap();
                     }
                 }
                 None => {}
@@ -85,17 +80,14 @@ impl Ramup {
                         let dir_path = path.parent().unwrap();
                         let dir_path = dir_path.to_str().unwrap();
                         let app_path = path.to_str().unwrap();
-                        let ram_dir_path = format!("/Volumes/RAMUpDisk{}", dir_path);
+                        let _ram_dir_path = format!("/Volumes/RAMUpDisk{}", dir_path);
                         let ram_app_path = format!("/Volumes/RAMUpDisk{}", app_path);
 
-                        Command::new("unlink")
-                            .args(&[&app_path])
-                            .output()
-                            .expect("unlink is failed");
-                        Command::new("mv")
-                            .args(&[&ram_app_path, app_path])
-                            .output()
-                            .expect("mv is failed");
+                        fs::remove_file(&app_path).unwrap();
+                        let mut option = CopyOptions::new();
+                        option.copy_inside = true;
+                        move_dir(&ram_app_path, &dir_path, &option).unwrap();
+
                         Command::new("hdiutil")
                             .args(&["detach", &self.mount_point])
                             .output()

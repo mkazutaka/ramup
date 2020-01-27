@@ -1,14 +1,11 @@
 use crate::application::ApplicationConfig;
-use serde::de::{Deserializer, MapAccess, SeqAccess, Visitor};
+use serde::de::{Deserializer, MapAccess, Visitor};
 use serde::export::fmt::Error;
 use serde::export::Formatter;
-use serde::private::ser::constrain;
 use serde::Deserialize;
 use shellexpand;
-use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
-use std::path::Path;
 
 #[derive(Debug, Deserialize)]
 pub struct UserConfig {

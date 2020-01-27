@@ -1,5 +1,3 @@
-use crate::config::UserApplicationConfig;
-use clap::App;
 use rust_embed::RustEmbed;
 use serde::Deserialize;
 
