@@ -1,9 +1,10 @@
-use crate::application::DefaultApplicationConfig;
+use crate::application::ApplicationConfig;
 use serde::de::{Deserializer, MapAccess, SeqAccess, Visitor};
 use serde::export::fmt::Error;
 use serde::export::Formatter;
 use serde::private::ser::constrain;
 use serde::Deserialize;
+use shellexpand;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
@@ -12,6 +13,21 @@ use std::path::Path;
 #[derive(Debug, Deserialize)]
 pub struct UserConfig {
     pub applications: Vec<UserApplicationConfig>,
+}
+
+impl UserConfig {
+    pub fn new() -> UserConfig {
+        let path = "~/.config/ramup/config.toml";
+        let path = shellexpand::tilde(path).to_string();
+
+        let mut contents = String::new();
+        File::open(&path)
+            .unwrap()
+            .read_to_string(&mut contents)
+            .unwrap();
+
+        toml::from_str(&contents).unwrap()
+    }
 }
 
 #[derive(Debug)]
@@ -63,7 +79,7 @@ impl<'de> Visitor<'de> for UserApplicationConfigVisitor {
             }
         }
 
-        let default_config = DefaultApplicationConfig::from(&app_config.name);
+        let default_config = ApplicationConfig::from(&app_config.name);
         if app_config.restart.is_none() {
             app_config.restart = Some(default_config.restart);
         }
@@ -81,20 +97,6 @@ impl<'de> Deserialize<'de> for UserApplicationConfig {
         D: Deserializer<'de>,
     {
         deserializer.deserialize_map(UserApplicationConfigVisitor)
-    }
-}
-
-impl UserConfig {
-    pub fn new() -> UserConfig {
-        let path = "/Users/mkazutaka/.config/ramup/config.toml";
-
-        let mut contents = String::new();
-        File::open(&path)
-            .unwrap()
-            .read_to_string(&mut contents)
-            .unwrap();
-
-        toml::from_str(&contents).unwrap()
     }
 }
 

@@ -1,4 +1,4 @@
-use crate::application::DefaultApplicationConfig;
+use crate::application::ApplicationConfig;
 use crate::config::UserConfig;
 use shellexpand;
 use std::path::Path;
