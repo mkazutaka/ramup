@@ -27,7 +27,7 @@ impl Config {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct ConfigApplication {
     pub name: String,
     pub restart: Option<bool>,

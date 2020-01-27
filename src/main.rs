@@ -18,7 +18,7 @@ fn main() {
     let user_config = config::Config::new();
     let mut ramup = Ramup::new(user_config);
 
-    ramup.create();
+    ramup.create().unwrap();
     println!("backup start");
     ramup.backup();
     println!("backup finished");
