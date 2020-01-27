@@ -3,38 +3,15 @@ use serde::de::{Deserializer, MapAccess, Visitor};
 use serde::export::fmt::Error;
 use serde::export::Formatter;
 use serde::Deserialize;
-use shellexpand;
-use std::fs::File;
-use std::io::Read;
-
-#[derive(Debug, Deserialize)]
-pub struct Config {
-    pub applications: Vec<ConfigApplication>,
-}
-
-impl Config {
-    pub fn new() -> Config {
-        let path = "~/.config/ramup/config.toml";
-        let path = shellexpand::tilde(path).to_string();
-
-        let mut contents = String::new();
-        File::open(&path)
-            .unwrap()
-            .read_to_string(&mut contents)
-            .unwrap();
-
-        toml::from_str(&contents).unwrap()
-    }
-}
 
 #[derive(Debug, Default)]
-pub struct ConfigApplication {
+pub struct ApplicationConfig {
     pub name: String,
     pub restart: Option<bool>,
     pub paths: Option<Vec<String>>,
 }
 
-impl ConfigApplication {
+impl ApplicationConfig {
     pub fn set_name(&mut self, name: String) {
         self.name = name;
     }
@@ -51,17 +28,17 @@ impl ConfigApplication {
 struct UserApplicationConfigVisitor;
 
 impl<'de> Visitor<'de> for UserApplicationConfigVisitor {
-    type Value = ConfigApplication;
+    type Value = ApplicationConfig;
 
     fn expecting(&self, formatter: &mut Formatter) -> Result<(), Error> {
         formatter.write_str("a very special map")
     }
 
-    fn visit_map<V>(self, mut map: V) -> Result<ConfigApplication, V::Error>
+    fn visit_map<V>(self, mut map: V) -> Result<ApplicationConfig, V::Error>
     where
         V: MapAccess<'de>,
     {
-        let mut app_config = ConfigApplication {
+        let mut app_config = ApplicationConfig {
             name: "".to_string(),
             restart: None,
             paths: None,
@@ -88,7 +65,7 @@ impl<'de> Visitor<'de> for UserApplicationConfigVisitor {
     }
 }
 
-impl<'de> Deserialize<'de> for ConfigApplication {
+impl<'de> Deserialize<'de> for ApplicationConfig {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -108,7 +85,7 @@ mod tests {
         restart = false
         "#;
 
-        let config: ConfigApplication = toml::from_str(config).unwrap();
+        let config: ApplicationConfig = toml::from_str(config).unwrap();
         assert_eq!(config.name, "example");
     }
 }
