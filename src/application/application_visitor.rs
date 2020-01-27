@@ -26,9 +26,15 @@ impl<'de> Visitor<'de> for ApplicationVisitor {
 
         while let Some(key) = map.next_key()? {
             match key {
-                "name" => app_config.set_name(map.next_value().unwrap()),
-                "restart" => app_config.set_restart(map.next_value().unwrap()),
-                "paths" => app_config.set_paths(map.next_value().unwrap()),
+                "name" => {
+                    app_config.name = map.next_value().unwrap();
+                }
+                "restart" => {
+                    app_config.restart = map.next_value().unwrap();
+                }
+                "paths" => {
+                    app_config.paths = map.next_value().unwrap();
+                }
                 _ => {}
             }
         }

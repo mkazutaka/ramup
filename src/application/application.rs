@@ -12,19 +12,7 @@ pub struct Application {
     pub paths: Vec<String>,
 }
 
-impl Application {
-    pub fn set_name(&mut self, name: String) {
-        self.name = name;
-    }
-
-    pub fn set_restart(&mut self, restart: bool) {
-        self.restart = Some(restart);
-    }
-
-    pub fn set_paths(&mut self, paths: Vec<String>) {
-        self.paths = paths;
-    }
-}
+impl Application {}
 
 impl<'de> Deserialize<'de> for Application {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
