@@ -1,9 +1,7 @@
 use crate::application::{Application, ApplicationFile};
-use rust_embed::RustEmbed;
-use serde::de::{Deserializer, MapAccess, Visitor};
+use serde::de::{MapAccess, Visitor};
 use serde::export::fmt::Error;
 use serde::export::Formatter;
-use serde::Deserialize;
 
 pub struct ApplicationVisitor;
 

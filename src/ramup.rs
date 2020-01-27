@@ -1,10 +1,6 @@
 use crate::config::Config;
 use crate::utils;
 use clap::Result;
-use fs_extra::dir::{move_dir, CopyOptions};
-use shellexpand;
-use std::fs;
-use std::path::Path;
 use std::process::Command;
 
 pub struct Ramup {
@@ -35,5 +31,9 @@ impl Ramup {
         for app in &self.config.applications {
             app.restore(&self.config.ram.name);
         }
+        Command::new("hdiutil")
+            .args(&["detach", &self.mount_point])
+            .output()
+            .expect("detach is failed");
     }
 }

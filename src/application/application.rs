@@ -1,9 +1,6 @@
 use crate::application::ApplicationVisitor;
 use fs_extra::dir::{move_dir, CopyOptions};
-use rust_embed::RustEmbed;
-use serde::de::{Deserializer, MapAccess, Visitor};
-use serde::export::fmt::Error;
-use serde::export::Formatter;
+use serde::de::Deserializer;
 use serde::Deserialize;
 use std::fs;
 use std::path::Path;
