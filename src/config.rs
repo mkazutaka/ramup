@@ -1,4 +1,4 @@
-use crate::application::ApplicationConfig;
+use crate::application::Application;
 use serde::de::{Deserializer, MapAccess, Visitor};
 use serde::export::fmt::Error;
 use serde::export::Formatter;
@@ -8,12 +8,12 @@ use std::fs::File;
 use std::io::Read;
 
 #[derive(Debug, Deserialize)]
-pub struct UserConfig {
-    pub applications: Vec<UserApplicationConfig>,
+pub struct Config {
+    pub applications: Vec<ConfigApplication>,
 }
 
-impl UserConfig {
-    pub fn new() -> UserConfig {
+impl Config {
+    pub fn new() -> Config {
         let path = "~/.config/ramup/config.toml";
         let path = shellexpand::tilde(path).to_string();
 
@@ -28,13 +28,13 @@ impl UserConfig {
 }
 
 #[derive(Debug)]
-pub struct UserApplicationConfig {
+pub struct ConfigApplication {
     pub name: String,
     pub restart: Option<bool>,
     pub paths: Option<Vec<String>>,
 }
 
-impl UserApplicationConfig {
+impl ConfigApplication {
     pub fn set_name(&mut self, name: String) {
         self.name = name;
     }
@@ -51,17 +51,17 @@ impl UserApplicationConfig {
 struct UserApplicationConfigVisitor;
 
 impl<'de> Visitor<'de> for UserApplicationConfigVisitor {
-    type Value = UserApplicationConfig;
+    type Value = ConfigApplication;
 
     fn expecting(&self, formatter: &mut Formatter) -> Result<(), Error> {
         formatter.write_str("a very special map")
     }
 
-    fn visit_map<V>(self, mut map: V) -> Result<UserApplicationConfig, V::Error>
+    fn visit_map<V>(self, mut map: V) -> Result<ConfigApplication, V::Error>
     where
         V: MapAccess<'de>,
     {
-        let mut app_config = UserApplicationConfig {
+        let mut app_config = ConfigApplication {
             name: "".to_string(),
             restart: None,
             paths: None,
@@ -76,7 +76,7 @@ impl<'de> Visitor<'de> for UserApplicationConfigVisitor {
             }
         }
 
-        let default_config = ApplicationConfig::from(&app_config.name);
+        let default_config = Application::from(&app_config.name);
         if app_config.restart.is_none() {
             app_config.restart = Some(default_config.restart);
         }
@@ -88,7 +88,7 @@ impl<'de> Visitor<'de> for UserApplicationConfigVisitor {
     }
 }
 
-impl<'de> Deserialize<'de> for UserApplicationConfig {
+impl<'de> Deserialize<'de> for ConfigApplication {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -108,7 +108,7 @@ mod tests {
         restart = false
         "#;
 
-        let config: UserApplicationConfig = toml::from_str(config).unwrap();
+        let config: ConfigApplication = toml::from_str(config).unwrap();
         assert_eq!(config.name, "example");
     }
 }

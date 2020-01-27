@@ -15,7 +15,7 @@ fn main() {
         .subcommand(SubCommand::with_name("restore").about("restore from RAM Disk"))
         .get_matches();
 
-    let user_config = config::UserConfig::new();
+    let user_config = config::Config::new();
     let mut ramup = Ramup::new(user_config);
 
     ramup.create();

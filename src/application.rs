@@ -2,7 +2,7 @@ use rust_embed::RustEmbed;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
-pub struct ApplicationConfig {
+pub struct Application {
     pub name: String,
     pub restart: bool,
     pub paths: Vec<String>,
@@ -12,8 +12,8 @@ pub struct ApplicationConfig {
 #[folder = "applications/"]
 struct Applications;
 
-impl ApplicationConfig {
-    pub fn from(name: &String) -> ApplicationConfig {
+impl Application {
+    pub fn from(name: &String) -> Application {
         for file in Applications::iter() {
             if format!("{}.toml", name) == file.as_ref() {
                 let file = file.as_ref();
@@ -21,7 +21,7 @@ impl ApplicationConfig {
                 let file = file.as_ref();
 
                 let toml_content = std::str::from_utf8(file).unwrap();
-                let c: ApplicationConfig = toml::from_str(toml_content).unwrap();
+                let c: Application = toml::from_str(toml_content).unwrap();
                 return c;
             }
         }
@@ -31,7 +31,7 @@ impl ApplicationConfig {
             restart = false
             paths = []
         "#;
-        let c: ApplicationConfig = toml::from_str(toml_content).unwrap();
+        let c: Application = toml::from_str(toml_content).unwrap();
         c
     }
 }

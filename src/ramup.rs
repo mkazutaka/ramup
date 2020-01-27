@@ -1,4 +1,4 @@
-use crate::config::UserConfig;
+use crate::config::Config;
 use fs_extra::dir::{move_dir, CopyOptions};
 use shellexpand;
 use std::fs;
@@ -7,11 +7,11 @@ use std::process::Command;
 
 pub struct Ramup {
     mount_point: String,
-    user_config: UserConfig,
+    user_config: Config,
 }
 
 impl Ramup {
-    pub fn new(user_config: UserConfig) -> Ramup {
+    pub fn new(user_config: Config) -> Ramup {
         Ramup {
             mount_point: "".to_string(),
             user_config,
