@@ -8,7 +8,7 @@ use serde::Deserialize;
 pub struct ApplicationConfig {
     pub name: String,
     pub restart: Option<bool>,
-    pub paths: Option<Vec<String>>,
+    pub paths: Vec<String>,
 }
 
 impl ApplicationConfig {
@@ -21,7 +21,7 @@ impl ApplicationConfig {
     }
 
     pub fn set_paths(&mut self, paths: Vec<String>) {
-        self.paths = Some(paths);
+        self.paths = paths;
     }
 }
 
@@ -41,7 +41,7 @@ impl<'de> Visitor<'de> for UserApplicationConfigVisitor {
         let mut app_config = ApplicationConfig {
             name: "".to_string(),
             restart: None,
-            paths: None,
+            paths: vec![],
         };
 
         while let Some(key) = map.next_key()? {
@@ -57,8 +57,8 @@ impl<'de> Visitor<'de> for UserApplicationConfigVisitor {
         if app_config.restart.is_none() {
             app_config.restart = Some(default_config.restart);
         }
-        if app_config.paths.is_none() {
-            app_config.paths = Some(default_config.paths);
+        if app_config.paths.len() == 0 {
+            app_config.paths = default_config.paths;
         }
 
         Ok(app_config)
