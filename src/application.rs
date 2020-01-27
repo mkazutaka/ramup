@@ -7,7 +7,7 @@ use serde::Deserialize;
 pub struct ApplicationConfig {
     pub name: String,
     pub restart: bool,
-    pub files: Vec<String>,
+    pub paths: Vec<String>,
 }
 
 #[derive(RustEmbed)]
@@ -28,10 +28,10 @@ impl ApplicationConfig {
             }
         }
 
-        let mut toml_content = r#"
+        let toml_content = r#"
             name = ""
             restart = false
-            files = []
+            paths = []
         "#;
         let c: ApplicationConfig = toml::from_str(toml_content).unwrap();
         c

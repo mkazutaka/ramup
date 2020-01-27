@@ -41,9 +41,9 @@ impl Ramup {
 
     pub fn backup(&mut self) {
         for user_config in &mut self.user_config.applications {
-            match &user_config.files {
-                Some(files) => {
-                    for path in files {
+            match &user_config.paths {
+                Some(paths) => {
+                    for path in paths {
                         let path = shellexpand::tilde(path).to_string();
                         let path = Path::new(path.as_str());
 
@@ -74,9 +74,9 @@ impl Ramup {
 
     pub fn restore(&self) {
         for user_config in &self.user_config.applications {
-            match &user_config.files {
-                Some(files) => {
-                    for path in files {
+            match &user_config.paths {
+                Some(paths) => {
+                    for path in paths {
                         let path = shellexpand::tilde(path).to_string();
                         let path = Path::new(path.as_str());
 

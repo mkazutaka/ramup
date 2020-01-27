@@ -34,7 +34,7 @@ impl UserConfig {
 pub struct UserApplicationConfig {
     pub name: String,
     pub restart: Option<bool>,
-    pub files: Option<Vec<String>>,
+    pub paths: Option<Vec<String>>,
 }
 
 impl UserApplicationConfig {
@@ -46,8 +46,8 @@ impl UserApplicationConfig {
         self.restart = Some(restart);
     }
 
-    pub fn set_files(&mut self, files: Vec<String>) {
-        self.files = Some(files);
+    pub fn set_paths(&mut self, paths: Vec<String>) {
+        self.paths = Some(paths);
     }
 }
 
@@ -67,14 +67,14 @@ impl<'de> Visitor<'de> for UserApplicationConfigVisitor {
         let mut app_config = UserApplicationConfig {
             name: "".to_string(),
             restart: None,
-            files: None,
+            paths: None,
         };
 
         while let Some(key) = map.next_key()? {
             match key {
                 "name" => app_config.set_name(map.next_value().unwrap()),
                 "restart" => app_config.set_restart(map.next_value().unwrap()),
-                "files" => app_config.set_files(map.next_value().unwrap()),
+                "paths" => app_config.set_paths(map.next_value().unwrap()),
                 _ => {}
             }
         }
@@ -83,8 +83,8 @@ impl<'de> Visitor<'de> for UserApplicationConfigVisitor {
         if app_config.restart.is_none() {
             app_config.restart = Some(default_config.restart);
         }
-        if app_config.files.is_none() {
-            app_config.files = Some(default_config.files);
+        if app_config.paths.is_none() {
+            app_config.paths = Some(default_config.paths);
         }
 
         Ok(app_config)
