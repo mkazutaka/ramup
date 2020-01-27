@@ -1,4 +1,4 @@
-use crate::applications::DefaultApplicationConfig;
+use crate::application::DefaultApplicationConfig;
 use serde::de::{Deserializer, MapAccess, SeqAccess, Visitor};
 use serde::export::fmt::Error;
 use serde::export::Formatter;

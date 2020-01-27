@@ -1,4 +1,4 @@
-mod applications;
+mod application;
 mod config;
 mod ramup;
 
