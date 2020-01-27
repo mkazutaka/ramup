@@ -44,7 +44,7 @@ impl Ramup {
             match &user_config.paths {
                 Some(paths) => {
                     for path in paths {
-                        println!("start: {}", path.as_str());
+                        println!("backup: {}", path.as_str());
                         let path = shellexpand::tilde(path).to_string();
                         let path = Path::new(path.as_str());
 
@@ -78,6 +78,7 @@ impl Ramup {
             match &user_config.paths {
                 Some(paths) => {
                     for path in paths {
+                        println!("restore: {}", path.as_str());
                         let path = shellexpand::tilde(path).to_string();
                         let path = Path::new(path.as_str());
 
