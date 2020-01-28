@@ -40,4 +40,12 @@ impl Ramup {
             .expect("detach is failed");
         println!("restore finished");
     }
+
+    pub fn rsync(&self) {
+        println!("rsync start");
+        for app in &self.config.applications {
+            app.rsync(&self.config.ram.name);
+        }
+        println!("rsync end");
+    }
 }

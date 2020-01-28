@@ -52,6 +52,24 @@ impl Application {
             move_dir(&ram_app_path, &dir_path, &option).unwrap();
         }
     }
+
+    pub fn rsync(&self, ram: &str) {
+        for path in &self.paths {
+            println!("restore: {}", path.as_str());
+            let path = shellexpand::tilde(&path).to_string();
+
+            let source = format!("/Volumes/{}{}", ram, path);
+            let destination = format!("/Users/mkazutaka/.config/ramup/backup{}", path);
+            let console_info = rusync::ConsoleProgressInfo::new();
+            let options = rusync::SyncOptions::new();
+            let source = Path::new(source.as_str());
+            let destination = Path::new(destination.as_str());
+
+            let syncer =
+                rusync::Syncer::new(&source, &destination, options, Box::new(console_info));
+            let stats = syncer.sync();
+        }
+    }
 }
 
 impl<'de> Deserialize<'de> for Application {

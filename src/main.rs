@@ -23,12 +23,15 @@ fn main() {
     ramup.backup();
 
     ctrlc::set_handler(move || {
+        let config = config::Config::new();
+        let mut ramup = Ramup::new(config);
         ramup.restore();
         process::exit(1)
     })
     .unwrap();
 
     loop {
-        thread::sleep(Duration::from_secs(10));
+        ramup.rsync();
+        thread::sleep(Duration::from_secs(5));
     }
 }
