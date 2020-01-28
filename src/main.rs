@@ -20,14 +20,10 @@ fn main() {
     let mut ramup = Ramup::new(user_config);
 
     ramup.create().unwrap();
-    println!("backup start");
     ramup.backup();
-    println!("backup finished");
 
     ctrlc::set_handler(move || {
-        println!("restore start");
         ramup.restore();
-        println!("restore finished");
         process::exit(1)
     })
     .unwrap();

@@ -22,12 +22,15 @@ impl Ramup {
     }
 
     pub fn backup(&mut self) {
+        println!("backup start");
         for app in &mut self.config.applications {
             app.backup(&self.config.ram.name);
         }
+        println!("backup finished");
     }
 
     pub fn restore(&self) {
+        println!("restore start");
         for app in &self.config.applications {
             app.restore(&self.config.ram.name);
         }
@@ -35,5 +38,6 @@ impl Ramup {
             .args(&["detach", &self.mount_point])
             .output()
             .expect("detach is failed");
+        println!("restore finished");
     }
 }
