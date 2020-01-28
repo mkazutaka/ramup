@@ -11,7 +11,7 @@ impl Default for RAMConfig {
     fn default() -> Self {
         RAMConfig {
             size: 8388608,
-            name: "RAMDisk".into(),
+            name: "RAMDisk by ramup".into(),
         }
     }
 }
