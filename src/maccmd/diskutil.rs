@@ -43,14 +43,12 @@ mod tests {
     #[test]
     #[cfg(target_os = "macos")]
     fn erasevolume() {
-        let mut hdiutl = HdiUtil::default();
-        hdiutl.attach("ram://100000").unwrap();
-        assert!(hdiutl.mount_point.len() > 1);
+        let devname = HdiUtil::attach(&100000).unwrap();
 
         let diskutil = DiskUtil::default();
-        diskutil.erasevolume(&hdiutl.mount_point).unwrap();
+        diskutil.erasevolume(&devname).unwrap();
+        assert_eq!(diskutil.erasevolume(&devname).unwrap(), ());
 
-        hdiutl.detach().unwrap();
-        assert_eq!(hdiutl.mount_point.len(), 0);
+        HdiUtil::detach(&devname).unwrap();
     }
 }

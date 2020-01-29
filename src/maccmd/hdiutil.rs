@@ -3,20 +3,10 @@ use plist;
 use serde::Deserialize;
 use std::process::Command;
 
-pub struct HdiUtil {
-    pub mount_point: String,
-}
-
-impl Default for HdiUtil {
-    fn default() -> Self {
-        HdiUtil {
-            mount_point: "".into(),
-        }
-    }
-}
+pub struct HdiUtil {}
 
 impl HdiUtil {
-    pub fn info(&self) -> Result<HdiUtilInfo> {
+    pub fn info() -> Result<HdiUtilInfo> {
         let output = Command::new("hdiutil").args(&["info", "-plist"]).output()?;
 
         if !output.status.success() {
@@ -29,7 +19,9 @@ impl HdiUtil {
         Ok(plist::from_bytes(&output).unwrap())
     }
 
-    pub fn attach(&mut self, image: &str) -> Result<()> {
+    pub fn attach(size: &isize) -> Result<String> {
+        let image = format!("ram://{}", size);
+        let image = image.as_str();
         let output = Command::new("hdiutil")
             .args(&["attach", "-nomount", image])
             .output()?;
@@ -40,20 +32,18 @@ impl HdiUtil {
         }
 
         let output = String::from_utf8(output.stdout).unwrap();
-        self.mount_point = output.trim().to_string();
-        Ok(())
+        Ok(output.trim().to_string())
     }
 
-    pub fn detach(&mut self) -> Result<()> {
+    pub fn detach(devname: &str) -> Result<()> {
         let output = Command::new("hdiutil")
-            .args(&["detach", &self.mount_point])
+            .args(&["detach", devname])
             .output()?;
 
         if !output.status.success() {
             let err = format!("{}", String::from_utf8(output.stderr).unwrap());
             return Err(AppError::CommandError(err));
         }
-        self.mount_point = "".to_string();
         Ok(())
     }
 }
@@ -103,16 +93,8 @@ mod tests {
 
     #[test]
     #[cfg(target_os = "macos")]
-    fn default() {
-        let hdiutl = HdiUtil::default();
-        assert_eq!(hdiutl.mount_point, "".to_string())
-    }
-
-    #[test]
-    #[cfg(target_os = "macos")]
     fn info() {
-        let hdiutl = HdiUtil::default();
-        let hdiutil_info = hdiutl.info().unwrap();
+        let hdiutil_info = HdiUtil::info().unwrap();
 
         assert_eq!(hdiutil_info.vendor, "Apple");
     }
@@ -120,12 +102,9 @@ mod tests {
     #[test]
     #[cfg(target_os = "macos")]
     fn attach_and_detach() {
-        let mut hdiutl = HdiUtil::default();
-        hdiutl.attach("ram://100").unwrap();
-        assert!(hdiutl.mount_point.len() > 1);
-
-        hdiutl.detach().unwrap();
-        assert_eq!(hdiutl.mount_point.len(), 0);
+        let devname = HdiUtil::attach(&100).unwrap();
+        assert!(devname.len() > 1);
+        assert_eq!(HdiUtil::detach(&devname).unwrap(), ());
     }
 
     #[test]
