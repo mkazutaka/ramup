@@ -1,3 +1,4 @@
+use plist;
 use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, AppError>;
@@ -10,6 +11,12 @@ pub enum AppError {
 
 impl From<std::io::Error> for AppError {
     fn from(_: std::io::Error) -> Self {
+        unimplemented!()
+    }
+}
+
+impl From<plist::Error> for AppError {
+    fn from(_: plist::Error) -> Self {
         unimplemented!()
     }
 }
