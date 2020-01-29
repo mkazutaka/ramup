@@ -19,6 +19,20 @@ impl HdiUtil {
         Ok(plist::from_bytes(&output).unwrap())
     }
 
+    pub fn exist(devname: &str) -> Result<bool> {
+        let info = HdiUtil::info()?;
+        for image in &info.images {
+            if &image.system_entities[0].dev_entry == devname {
+                return Ok(true);
+            }
+            match &image.system_entities[0].mount_point {
+                Some(_) => return Ok(true),
+                None => {}
+            }
+        }
+        Ok(false)
+    }
+
     pub fn attach(size: &isize) -> Result<String> {
         let image = format!("ram://{}", size);
         let image = image.as_str();
@@ -85,6 +99,8 @@ pub struct HdiUtilInfoImageSystemEntity {
     content_hint: String,
     #[serde(rename(deserialize = "dev-entry"))]
     dev_entry: String,
+    #[serde(rename(deserialize = "mount-point"))]
+    mount_point: Option<String>,
 }
 
 #[cfg(test)]
@@ -97,6 +113,20 @@ mod tests {
         let hdiutil_info = HdiUtil::info().unwrap();
 
         assert_eq!(hdiutil_info.vendor, "Apple");
+    }
+
+    #[test]
+    #[cfg(target_os = "macos")]
+    fn exist() {
+        let devname = HdiUtil::attach(&100).unwrap();
+        assert_eq!(HdiUtil::exist(&devname).unwrap(), true);
+        HdiUtil::detach(&devname).unwrap();
+    }
+
+    #[test]
+    #[cfg(target_os = "macos")]
+    fn not_exist() {
+        assert_eq!(HdiUtil::exist("hoge").unwrap(), false);
     }
 
     #[test]
@@ -215,5 +245,6 @@ mod tests {
             hdiuti_info_image_system_entry.dev_entry,
             "/dev/disk2".to_string()
         );
+        assert_eq!(hdiuti_info_image_system_entry.mount_point.is_none(), true);
     }
 }
