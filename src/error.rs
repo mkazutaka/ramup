@@ -1,7 +1,6 @@
 use fs_extra;
 use plist;
 use std;
-use std::path::StripPrefixError;
 use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, AppError>;

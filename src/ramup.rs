@@ -1,13 +1,10 @@
 use crate::application::Application;
 use crate::config::{Config, RAM};
-use crate::error::{AppError, Result};
-use crate::utils;
+use crate::error::Result;
 use fs_extra::dir::CopyOptions;
-use shellexpand::full;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
-use std::process::Command;
 
 #[derive(Debug, Default)]
 pub struct Ramup {
@@ -17,7 +14,6 @@ pub struct Ramup {
 
 impl Ramup {
     pub fn from_file(path: &str) -> Result<Ramup> {
-        let path = shellexpand::tilde("~/.config/ramup/config.toml").to_string();
         let mut contents = String::new();
         let mut file = File::open(&path)?;
         file.read_to_string(&mut contents)?;
@@ -28,12 +24,22 @@ impl Ramup {
         })
     }
 
+    #[allow(dead_code)]
     pub fn from_str(contents: &str) -> Result<Ramup> {
         let config: Config = toml::from_str(contents).unwrap();
         Ok(Ramup {
             ram: config.ram,
             applications: config.applications,
         })
+    }
+
+    pub fn backup_all(&self) -> Result<()> {
+        for app in &self.applications {
+            for path in &app.paths {
+                self.backup(path.as_str())?
+            }
+        }
+        Ok(())
     }
 
     pub fn backup(&self, path: &str) -> Result<()> {
@@ -44,8 +50,17 @@ impl Ramup {
         std::fs::create_dir_all(ram_parent_path)?;
         let mut option = CopyOptions::new();
         option.copy_inside = true;
-        fs_extra::dir::move_dir(path, ram_parent_path, &option);
+        fs_extra::dir::move_dir(path, ram_parent_path, &option)?;
         std::os::unix::fs::symlink(ram_path, path)?;
+        Ok(())
+    }
+
+    pub fn restore_all(&self) -> Result<()> {
+        for app in &self.applications {
+            for path in &app.paths {
+                self.restore(path.as_str())?
+            }
+        }
         Ok(())
     }
 
@@ -60,51 +75,22 @@ impl Ramup {
         fs_extra::dir::move_dir(ram_path, parent_path, &option)?;
         Ok(())
     }
-
-    //    pub fn new_old(config: Config) -> Ramup {
-    //        Ramup {
-    //            config,
-    //            mount_point: "".to_string(),
-    //        }
-    //    }
-    //
-    //    pub fn create_old(&mut self) -> clap::Result<()> {
-    //        self.mount_point = utils::mount(&self.config.ram.size, &self.config.ram.name)?;
-    //        Ok(())
-    //    }
-    //
-    //    pub fn backup_old(&mut self) {
-    //        println!("backup start");
-    //        for app in &mut self.config.applications {
-    //            app.backup(&self.config.ram.name);
-    //        }
-    //        println!("backup finished");
-    //    }
-    //
-    //    pub fn restore_old(&self) {
-    //        println!("restore start");
-    //        for app in &self.config.applications {
-    //            app.restore(&self.config.ram.name);
-    //        }
-    //        Command::new("hdiutil")
-    //            .args(&["detach", &self.mount_point])
-    //            .output()
-    //            .expect("detach is failed");
-    //        println!("restore finished");
-    //    }
-    //
-    //    pub fn rsync_old(&self) {
-    //        println!("rsync start");
-    //        for app in &self.config.applications {
-    //            app.rsync(&self.config.ram.name);
-    //        }
-    //        println!("rsync end");
-    //    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
+    use tempdir::TempDir;
+
+    macro_rules! check {
+        ($e:expr) => {
+            match $e {
+                Ok(t) => t,
+                Err(e) => panic!("{} failed with: {}", stringify!($e), e),
+            }
+        };
+    }
 
     #[test]
     #[cfg(target_os = "macos")]
@@ -118,21 +104,45 @@ mod tests {
         name = "example"
         restart = false
         "#;
-        let ramup = Ramup::from_str(t).unwrap();
+        let ramup = check!(Ramup::from_str(t));
         assert_eq!(ramup.ram.devname, "RAMDisk".to_string())
     }
 
     #[test]
-    #[cfg(target_os = "macos")]
-    fn backup() {
-        let t = r#"
-        [ram]
-        devname = "RAMDisk"
-        size = 8388607
-        mount_path = "/tmp"
-        "#;
-        let ramup = Ramup::from_str(t).unwrap();
-        ramup.backup("/tmp/hoge/fuga");
-        ramup.restore("/tmp/hoge/fuga").expect("restore failed");
+    fn backup_and_restore() {
+        let mount_tmp_dir = check!(TempDir::new("ramup-volume-ram"));
+        let mount_path = mount_tmp_dir.path();
+        let mount_str = mount_path.to_str().unwrap();
+
+        let target_tmp_dir = check!(TempDir::new("ramup-target"));
+        let target_path = target_tmp_dir.path();
+        let target_str = target_path.to_str().unwrap();
+
+        let toml = format!(
+            r#"
+                 [ram]
+                 devname = "RAMDisk"
+                 size = 8388607
+                 mount_path = "{}"
+            "#,
+            mount_str
+        );
+        let ramup = check!(Ramup::from_str(&toml));
+
+        // Backup
+        check!(ramup.backup(target_str));
+        let m = check!(fs::symlink_metadata(target_str));
+        assert_eq!(m.file_type().is_symlink(), true);
+        assert_eq!(m.file_type().is_dir(), false);
+
+        // Is Correct SymLink
+        let sym_file_path = mount_path.join(target_path.strip_prefix("/").unwrap());
+        assert_eq!(sym_file_path, check!(fs::read_link(target_str)));
+
+        // Restore
+        check!(ramup.restore(target_str));
+        let m = check!(fs::symlink_metadata(target_str));
+        assert_eq!(m.file_type().is_symlink(), false);
+        assert_eq!(m.file_type().is_dir(), true);
     }
 }

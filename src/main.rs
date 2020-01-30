@@ -8,10 +8,7 @@ mod utils;
 
 use crate::ramup::Ramup;
 use clap::{App, Arg, SubCommand};
-use ctrlc;
 use shellexpand;
-use std::process;
-use std::{thread, time::Duration};
 
 fn main() {
     let matches = App::new("ramup")
@@ -23,6 +20,8 @@ fn main() {
                 .arg(
                     Arg::with_name("path")
                         .short("p")
+                        .long("path")
+                        .takes_value(true)
                         .help("Target path to backup"),
                 ),
         )
@@ -37,44 +36,30 @@ fn main() {
         )
         .get_matches();
 
-    let config = config::Config::new();
-
     let cfg = shellexpand::tilde("~/.config/ramup/config.toml").to_string();
-    let mut ramup = Ramup::from_file(&cfg);
+    let ramup = Ramup::from_file(&cfg).unwrap();
 
     if let Some(matches) = matches.subcommand_matches("backup") {
-        //        if matches.is_present("debug") {
-        //            println!("Printing debug info...");
-        //        } else {
-        //            println!("Printing normally...");
-        //        }
+        if matches.is_present("path") {
+            match matches.value_of("path") {
+                Some(path) => ramup.backup(path).unwrap(),
+                None => {}
+            }
+        } else {
+            ramup.backup_all().unwrap();
+        }
         return;
     }
 
     if let Some(matches) = matches.subcommand_matches("restore") {
-        //        if matches.is_present("debug") {
-        //            println!("Printing debug info...");
-        //        } else {
-        //            println!("Printing normally...");
-        //        }
+        if matches.is_present("path") {
+            match matches.value_of("path") {
+                Some(path) => ramup.restore(path).unwrap(),
+                None => {}
+            }
+        } else {
+            ramup.restore_all().unwrap();
+        }
         return;
     }
-
-    //    let mut ramup = Ramup::new_old(config);
-    //
-    //    ramup.create_old().unwrap();
-    //    ramup.backup_old();
-    //
-    //    ctrlc::set_handler(move || {
-    //        let config = config::Config::new();
-    //        let mut ramup = Ramup::new_old(config);
-    //        ramup.restore_old();
-    //        process::exit(1)
-    //    })
-    //    .unwrap();
-    //
-    //    loop {
-    //        ramup.rsync_old();
-    //        thread::sleep(Duration::from_secs(5));
-    //    }
 }

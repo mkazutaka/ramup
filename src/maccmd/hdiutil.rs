@@ -6,6 +6,7 @@ use std::process::Command;
 pub struct HdiUtil {}
 
 impl HdiUtil {
+    #[allow(dead_code)]
     pub fn info() -> Result<HdiUtilInfo> {
         let output = Command::new("hdiutil").args(&["info", "-plist"]).output()?;
 
@@ -19,6 +20,7 @@ impl HdiUtil {
         Ok(plist::from_bytes(&output).unwrap())
     }
 
+    #[allow(dead_code)]
     pub fn exist(devname: &str) -> Result<bool> {
         let info = HdiUtil::info()?;
         for image in &info.images {
@@ -33,6 +35,7 @@ impl HdiUtil {
         Ok(false)
     }
 
+    #[allow(dead_code)]
     pub fn attach(size: &isize) -> Result<String> {
         let image = format!("ram://{}", size);
         let image = image.as_str();
@@ -49,6 +52,7 @@ impl HdiUtil {
         Ok(output.trim().to_string())
     }
 
+    #[allow(dead_code)]
     pub fn detach(devname: &str) -> Result<()> {
         let output = Command::new("hdiutil")
             .args(&["detach", devname])
@@ -62,6 +66,7 @@ impl HdiUtil {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize)]
 pub struct HdiUtilInfo {
     framework: String,
@@ -70,6 +75,7 @@ pub struct HdiUtilInfo {
     vendor: String,
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize)]
 pub struct HdiUtilInfoImage {
     autodiskmount: bool,
@@ -93,6 +99,7 @@ pub struct HdiUtilInfoImage {
     writeable: bool,
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize)]
 pub struct HdiUtilInfoImageSystemEntity {
     #[serde(rename(deserialize = "content-hint"))]

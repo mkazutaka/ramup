@@ -14,6 +14,7 @@ impl Default for DiskUtil {
 }
 
 impl DiskUtil {
+    #[allow(dead_code)]
     pub fn erasevolume(&self, mount_point: &str) -> Result<()> {
         let output = Command::new("diskutil")
             .args(&["erasevolume", "HFS+", &self.volume_name, mount_point])

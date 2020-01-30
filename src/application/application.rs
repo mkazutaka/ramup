@@ -1,8 +1,6 @@
 use crate::application::ApplicationVisitor;
-use fs_extra::dir::{move_dir, CopyOptions};
 use serde::de::Deserializer;
 use serde::Deserialize;
-use std::fs;
 use std::path::Path;
 
 #[derive(Debug, Default)]
@@ -13,46 +11,7 @@ pub struct Application {
 }
 
 impl Application {
-    pub fn backup(&self, ram: &str) {
-        for path in &self.paths {
-            println!("backup: {}", path.as_str());
-            let path = shellexpand::tilde(&path).to_string();
-            let path = Path::new(path.as_str());
-
-            let dir_path = path.parent().unwrap();
-            let dir_path = dir_path.to_str().unwrap();
-            let app_path = path.to_str().unwrap();
-            let ram_dir_path = format!("/Volumes/{}{}", ram, dir_path);
-            let ram_app_path = format!("/Volumes/{}{}", ram, app_path);
-
-            let mut option = CopyOptions::new();
-            option.copy_inside = true;
-
-            fs::create_dir_all(&ram_dir_path).unwrap();
-            move_dir(&app_path, &ram_dir_path, &option).unwrap();
-            std::os::unix::fs::symlink(&ram_app_path, &app_path).unwrap();
-        }
-    }
-
-    pub fn restore(&self, ram: &str) {
-        for path in &self.paths {
-            println!("restore: {}", path.as_str());
-            let path = shellexpand::tilde(&path).to_string();
-            let path = Path::new(path.as_str());
-
-            let dir_path = path.parent().unwrap();
-            let dir_path = dir_path.to_str().unwrap();
-            let app_path = path.to_str().unwrap();
-            let _ram_dir_path = format!("/Volumes/{}{}", ram, dir_path);
-            let ram_app_path = format!("/Volumes/{}{}", ram, app_path);
-
-            fs::remove_file(&app_path).unwrap();
-            let mut option = CopyOptions::new();
-            option.copy_inside = true;
-            move_dir(&ram_app_path, &dir_path, &option).unwrap();
-        }
-    }
-
+    #[allow(dead_code)]
     pub fn rsync(&self, ram: &str) {
         for path in &self.paths {
             println!("restore: {}", path.as_str());
@@ -67,7 +26,7 @@ impl Application {
 
             let syncer =
                 rusync::Syncer::new(&source, &destination, options, Box::new(console_info));
-            let stats = syncer.sync();
+            let _stats = syncer.sync();
         }
     }
 }
