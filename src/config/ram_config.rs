@@ -2,16 +2,18 @@ use serde::Deserialize;
 
 #[derive(Deserialize, Debug)]
 #[serde(default)]
-pub struct RAMConfig {
+pub struct RAM {
     pub size: isize,
-    pub name: String,
+    pub devname: String,
+    pub mount_path: String,
 }
 
-impl Default for RAMConfig {
+impl Default for RAM {
     fn default() -> Self {
-        RAMConfig {
+        RAM {
             size: 8388608,
-            name: "RAMDisk by ramup".into(),
+            devname: "RAMDisk by ramup".into(),
+            mount_path: "/Volumes".into(),
         }
     }
 }
