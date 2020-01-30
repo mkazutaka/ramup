@@ -4,7 +4,6 @@ mod error;
 mod maccmd;
 mod ram;
 mod ramup;
-mod utils;
 
 use crate::ramup::Ramup;
 use clap::{App, Arg, SubCommand};

@@ -36,6 +36,12 @@ impl HdiUtil {
     }
 
     #[allow(dead_code)]
+    pub fn exist_volume(name: &str) -> Result<bool> {
+        let volume_name = format!("/Volumes/{}", name);
+        HdiUtil::exist(&volume_name)
+    }
+
+    #[allow(dead_code)]
     pub fn attach(size: &isize) -> Result<String> {
         let image = format!("ram://{}", size);
         let image = image.as_str();
@@ -63,6 +69,12 @@ impl HdiUtil {
             return Err(AppError::CommandError(err));
         }
         Ok(())
+    }
+
+    #[allow(dead_code)]
+    pub fn detach_volume(name: &str) -> Result<()> {
+        let volume_name = format!("/Volumes/{}", name);
+        HdiUtil::detach(&volume_name)
     }
 }
 
@@ -113,21 +125,27 @@ pub struct HdiUtilInfoImageSystemEntity {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::maccmd::DiskUtil;
 
     #[test]
     #[cfg(target_os = "macos")]
     fn info() {
         let hdiutil_info = HdiUtil::info().unwrap();
-
         assert_eq!(hdiutil_info.vendor, "Apple");
     }
 
     #[test]
     #[cfg(target_os = "macos")]
     fn exist() {
-        let devname = HdiUtil::attach(&100).unwrap();
-        assert_eq!(HdiUtil::exist(&devname).unwrap(), true);
-        HdiUtil::detach(&devname).unwrap();
+        let mountpoint = HdiUtil::attach(&100).unwrap();
+        assert_eq!(HdiUtil::exist(&mountpoint).unwrap(), true);
+        HdiUtil::detach(&mountpoint).unwrap();
+
+        let mountpoint = HdiUtil::attach(&10000).unwrap();
+        let name = "RAMDiskForExistTest";
+        DiskUtil::erasevolume(&name, &mountpoint).unwrap();
+        assert_eq!(HdiUtil::exist_volume(&mountpoint).unwrap(), true);
+        HdiUtil::detach(&format!("/Volumes/{}", name)).unwrap();
     }
 
     #[test]
@@ -142,6 +160,16 @@ mod tests {
         let devname = HdiUtil::attach(&100).unwrap();
         assert!(devname.len() > 1);
         assert_eq!(HdiUtil::detach(&devname).unwrap(), ());
+    }
+
+    #[test]
+    #[cfg(target_os = "macos")]
+    fn attach_and_detach_volume() {
+        let mountpoint = HdiUtil::attach(&10000).unwrap();
+        let name = "RAMDiskForAttachAndDetachTest";
+        DiskUtil::erasevolume(&name, &mountpoint).unwrap();
+        assert_eq!(HdiUtil::exist_volume(&mountpoint).unwrap(), true);
+        HdiUtil::detach_volume(name).unwrap();
     }
 
     #[test]

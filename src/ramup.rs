@@ -1,6 +1,7 @@
 use crate::application::Application;
 use crate::config::{Config, RAM};
 use crate::error::Result;
+use crate::maccmd::{DiskUtil, HdiUtil};
 use fs_extra::dir::CopyOptions;
 use std::fs::File;
 use std::io::Read;
@@ -34,6 +35,7 @@ impl Ramup {
     }
 
     pub fn backup_all(&self) -> Result<()> {
+        self.mount()?;
         for app in &self.applications {
             for path in &app.paths {
                 self.backup(path.as_str())?
@@ -43,6 +45,7 @@ impl Ramup {
     }
 
     pub fn backup(&self, path: &str) -> Result<()> {
+        self.mount()?;
         let path = Path::new(path);
         let ram_path = Path::new(&self.ram.mount_path).join(path.strip_prefix("/")?);
         let ram_parent_path = ram_path.parent().unwrap();
@@ -61,7 +64,7 @@ impl Ramup {
                 self.restore(path.as_str())?
             }
         }
-        Ok(())
+        self.unmount()
     }
 
     pub fn restore(&self, path: &str) -> Result<()> {
@@ -74,6 +77,21 @@ impl Ramup {
         option.copy_inside = true;
         fs_extra::dir::move_dir(ram_path, parent_path, &option)?;
         Ok(())
+    }
+
+    fn mount(&self) -> Result<()> {
+        if true == HdiUtil::exist_volume(&self.ram.devname)? {
+            return Ok(());
+        }
+        let mountpoint = HdiUtil::attach(&self.ram.size)?;
+        DiskUtil::erasevolume(&self.ram.devname, &mountpoint)
+    }
+
+    fn unmount(&self) -> Result<()> {
+        if false == HdiUtil::exist_volume(&self.ram.devname)? {
+            return Ok(());
+        }
+        HdiUtil::detach_volume(&self.ram.devname)
     }
 }
 

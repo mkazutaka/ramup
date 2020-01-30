@@ -1,23 +1,13 @@
 use crate::error::{AppError, Result};
 use std::process::Command;
 
-pub struct DiskUtil {
-    volume_name: String,
-}
-
-impl Default for DiskUtil {
-    fn default() -> Self {
-        DiskUtil {
-            volume_name: "RAMDisk".into(),
-        }
-    }
-}
+pub struct DiskUtil {}
 
 impl DiskUtil {
     #[allow(dead_code)]
-    pub fn erasevolume(&self, mount_point: &str) -> Result<()> {
+    pub fn erasevolume(name: &str, mount_point: &str) -> Result<()> {
         let output = Command::new("diskutil")
-            .args(&["erasevolume", "HFS+", &self.volume_name, mount_point])
+            .args(&["erasevolume", "HFS+", name, mount_point])
             .output()?;
 
         if !output.status.success() {
@@ -36,20 +26,12 @@ mod tests {
 
     #[test]
     #[cfg(target_os = "macos")]
-    fn default() {
-        let hdiutl = DiskUtil::default();
-        assert_eq!(hdiutl.volume_name, "RAMDisk".to_string())
-    }
-
-    #[test]
-    #[cfg(target_os = "macos")]
     fn erasevolume() {
-        let devname = HdiUtil::attach(&100000).unwrap();
+        let name = "RAMDiskForTest";
+        let mount_point = HdiUtil::attach(&100000).unwrap();
 
-        let diskutil = DiskUtil::default();
-        diskutil.erasevolume(&devname).unwrap();
-        assert_eq!(diskutil.erasevolume(&devname).unwrap(), ());
-
+        DiskUtil::erasevolume(&name, &mount_point).unwrap();
+        let devname = format!("{}{}", "/Volumes/", name);
         HdiUtil::detach(&devname).unwrap();
     }
 }
