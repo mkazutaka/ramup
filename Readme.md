@@ -1,3 +1,6 @@
+![](https://github.com/mkazutaka/ramup/workflows/CI/badge.svg)
+
+
 # Concept
 
 ```makefile

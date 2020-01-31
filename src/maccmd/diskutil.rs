@@ -11,8 +11,9 @@ impl DiskUtil {
             .output()?;
 
         if !output.status.success() {
-            let err = format!("{}", String::from_utf8(output.stderr).unwrap());
-            return Err(AppError::CommandError(err));
+            return Err(AppError::CommandError(
+                String::from_utf8(output.stderr).unwrap(),
+            ));
         };
 
         Ok(())
@@ -21,14 +22,14 @@ impl DiskUtil {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::maccmd::HdiUtil;
-
     #[test]
     #[cfg(target_os = "macos")]
     fn erasevolume() {
+        use crate::maccmd::DiskUtil;
+        use crate::maccmd::HdiUtil;
+
         let name = "RAMDiskForTest";
-        let mount_point = HdiUtil::attach(&100000).unwrap();
+        let mount_point = HdiUtil::attach(100000).unwrap();
 
         DiskUtil::erasevolume(&name, &mount_point).unwrap();
         let devname = format!("{}{}", "/Volumes/", name);

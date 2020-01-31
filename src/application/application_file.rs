@@ -13,7 +13,7 @@ pub struct ApplicationFile {
 }
 
 impl ApplicationFile {
-    pub fn from(file_name: &String) -> ApplicationFile {
+    pub fn from(file_name: &str) -> ApplicationFile {
         for file in ApplicationFiles::iter() {
             if format!("{}.toml", file_name) == file.as_ref() {
                 let file = file.as_ref();

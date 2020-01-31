@@ -11,7 +11,7 @@ pub struct RAM {
 impl Default for RAM {
     fn default() -> Self {
         RAM {
-            size: 8388608,
+            size: 8_388_608,
             devname: "RAMDisk by ramup".into(),
             mount_path: "/Volumes".into(),
         }

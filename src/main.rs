@@ -4,6 +4,7 @@ mod error;
 mod maccmd;
 mod ram;
 mod ramup;
+mod state;
 
 use crate::ramup::Ramup;
 use clap::{App, Arg, SubCommand};
@@ -43,9 +44,8 @@ fn main() {
 
     if let Some(matches) = matches.subcommand_matches("backup") {
         if matches.is_present("path") {
-            match matches.value_of("path") {
-                Some(path) => ramup.backup(path).unwrap(),
-                None => {}
+            if let Some(path) = matches.value_of("path") {
+                ramup.backup(path).unwrap();
             }
         } else {
             ramup.backup_all().unwrap();
@@ -55,9 +55,8 @@ fn main() {
 
     if let Some(matches) = matches.subcommand_matches("restore") {
         if matches.is_present("path") {
-            match matches.value_of("path") {
-                Some(path) => ramup.restore(path).unwrap(),
-                None => {}
+            if let Some(path) = matches.value_of("path") {
+                ramup.restore(path).unwrap();
             }
         } else {
             ramup.restore_all().unwrap();
@@ -65,7 +64,7 @@ fn main() {
         return;
     }
 
-    if let Some(_) = matches.subcommand_matches("clean") {
+    if matches.subcommand_matches("clean").is_some() {
         ramup.clean().unwrap();
         return;
     }

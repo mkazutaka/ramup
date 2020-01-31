@@ -41,7 +41,7 @@ impl<'de> Visitor<'de> for ApplicationVisitor {
         if app_config.restart.is_none() {
             app_config.restart = Some(default_config.restart);
         }
-        if app_config.paths.len() == 0 {
+        if app_config.paths.is_empty() {
             app_config.paths = default_config.paths;
         }
 

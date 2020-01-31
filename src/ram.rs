@@ -10,7 +10,7 @@ pub struct RAMConfig {
 impl Default for RAMConfig {
     fn default() -> Self {
         RAMConfig {
-            size: 8388608,
+            size: 8_388_608,
             name: "RAMDisk by ramup".into(),
         }
     }

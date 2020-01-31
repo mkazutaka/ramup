@@ -96,15 +96,15 @@ impl Ramup {
     }
 
     fn mount(&self) -> Result<()> {
-        if true == HdiUtil::exist_volume(&self.ram.devname)? {
+        if HdiUtil::exist_volume(&self.ram.devname)? {
             return Ok(());
         }
-        let mountpoint = HdiUtil::attach(&self.ram.size)?;
+        let mountpoint = HdiUtil::attach(self.ram.size)?;
         DiskUtil::erasevolume(&self.ram.devname, &mountpoint)
     }
 
     fn unmount(&self) -> Result<()> {
-        if false == HdiUtil::exist_volume(&self.ram.devname)? {
+        if !HdiUtil::exist_volume(&self.ram.devname)? {
             return Ok(());
         }
         HdiUtil::detach_volume(&self.ram.devname)
@@ -143,6 +143,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(target_os = "macos")]
     fn backup_and_restore() {
         let mount_tmp_dir = check!(TempDir::new("ramup-volume-ram"));
         let mount_path = mount_tmp_dir.path();
@@ -180,5 +181,7 @@ mod tests {
         let m = check!(fs::symlink_metadata(target_str));
         assert_eq!(m.file_type().is_symlink(), false);
         assert_eq!(m.file_type().is_dir(), true);
+
+        ramup.clean().unwrap();
     }
 }

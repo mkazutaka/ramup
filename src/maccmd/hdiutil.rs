@@ -11,8 +11,9 @@ impl HdiUtil {
         let output = Command::new("hdiutil").args(&["info", "-plist"]).output()?;
 
         if !output.status.success() {
-            let err = format!("{}", String::from_utf8(output.stderr).unwrap());
-            return Err(AppError::CommandError(err));
+            return Err(AppError::CommandError(
+                String::from_utf8(output.stderr).unwrap(),
+            ));
         };
 
         let output = output.stdout.to_vec();
@@ -24,12 +25,11 @@ impl HdiUtil {
     pub fn exist(devname: &str) -> Result<bool> {
         let info = HdiUtil::info()?;
         for image in &info.images {
-            if &image.system_entities[0].dev_entry == devname {
+            if devname == image.system_entities[0].dev_entry {
                 return Ok(true);
             }
-            match &image.system_entities[0].mount_point {
-                Some(_) => return Ok(true),
-                None => {}
+            if devname == image.system_entities[0].mount_point {
+                return Ok(true);
             }
         }
         Ok(false)
@@ -42,7 +42,7 @@ impl HdiUtil {
     }
 
     #[allow(dead_code)]
-    pub fn attach(size: &isize) -> Result<String> {
+    pub fn attach(size: isize) -> Result<String> {
         let image = format!("ram://{}", size);
         let image = image.as_str();
         let output = Command::new("hdiutil")
@@ -50,8 +50,9 @@ impl HdiUtil {
             .output()?;
 
         if !output.status.success() {
-            let err = format!("{}", String::from_utf8(output.stderr).unwrap());
-            return Err(AppError::CommandError(err));
+            return Err(AppError::CommandError(
+                String::from_utf8(output.stderr).unwrap(),
+            ));
         }
 
         let output = String::from_utf8(output.stdout).unwrap();
@@ -59,14 +60,15 @@ impl HdiUtil {
     }
 
     #[allow(dead_code)]
-    pub fn detach(devname: &str) -> Result<()> {
+    pub fn detach(mountpoint: &str) -> Result<()> {
         let output = Command::new("hdiutil")
-            .args(&["detach", "-force", devname])
+            .args(&["detach", "-force", mountpoint])
             .output()?;
 
         if !output.status.success() {
-            let err = format!("{}", String::from_utf8(output.stderr).unwrap());
-            return Err(AppError::CommandError(err));
+            return Err(AppError::CommandError(
+                String::from_utf8(output.stderr).unwrap(),
+            ));
         }
         Ok(())
     }
@@ -112,20 +114,19 @@ pub struct HdiUtilInfoImage {
 }
 
 #[allow(dead_code)]
-#[derive(Deserialize)]
+#[derive(Deserialize, Default)]
 pub struct HdiUtilInfoImageSystemEntity {
     #[serde(rename(deserialize = "content-hint"))]
     content_hint: String,
     #[serde(rename(deserialize = "dev-entry"))]
     dev_entry: String,
-    #[serde(rename(deserialize = "mount-point"))]
-    mount_point: Option<String>,
+    #[serde(rename(deserialize = "mount-point"), default)]
+    mount_point: String,
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::maccmd::DiskUtil;
 
     #[test]
     #[cfg(target_os = "macos")]
@@ -137,38 +138,42 @@ mod tests {
     #[test]
     #[cfg(target_os = "macos")]
     fn exist() {
-        let mountpoint = HdiUtil::attach(&100).unwrap();
+        use crate::maccmd::DiskUtil;
+
+        let mountpoint = HdiUtil::attach(100).unwrap();
         assert_eq!(HdiUtil::exist(&mountpoint).unwrap(), true);
         HdiUtil::detach(&mountpoint).unwrap();
 
-        let mountpoint = HdiUtil::attach(&10000).unwrap();
+        let mountpoint = HdiUtil::attach(10000).unwrap();
         let name = "RAMDiskForExistTest";
         DiskUtil::erasevolume(&name, &mountpoint).unwrap();
-        assert_eq!(HdiUtil::exist_volume(&mountpoint).unwrap(), true);
-        HdiUtil::detach(&format!("/Volumes/{}", name)).unwrap();
+        assert_eq!(HdiUtil::exist_volume(&name).unwrap(), true);
+        HdiUtil::detach_volume(&name).unwrap();
     }
 
     #[test]
     #[cfg(target_os = "macos")]
     fn not_exist() {
-        assert_eq!(HdiUtil::exist("hoge").unwrap(), false);
+        assert_eq!(HdiUtil::exist("DevNameForNotExist").unwrap(), false);
     }
 
     #[test]
     #[cfg(target_os = "macos")]
     fn attach_and_detach() {
-        let devname = HdiUtil::attach(&100).unwrap();
-        assert!(devname.len() > 1);
-        assert_eq!(HdiUtil::detach(&devname).unwrap(), ());
+        let mountpoint = HdiUtil::attach(100).unwrap();
+        assert!(mountpoint.len() > 1);
+        HdiUtil::detach(&mountpoint).unwrap();
     }
 
     #[test]
     #[cfg(target_os = "macos")]
     fn attach_and_detach_volume() {
-        let mountpoint = HdiUtil::attach(&10000).unwrap();
+        use crate::maccmd::DiskUtil;
+
+        let mountpoint = HdiUtil::attach(10000).unwrap();
         let name = "RAMDiskForAttachAndDetachTest";
-        DiskUtil::erasevolume(&name, &mountpoint).unwrap();
-        assert_eq!(HdiUtil::exist_volume(&mountpoint).unwrap(), true);
+        DiskUtil::erasevolume(name, &mountpoint).unwrap();
+        assert_eq!(HdiUtil::exist_volume(&name).unwrap(), true);
         HdiUtil::detach_volume(name).unwrap();
     }
 
@@ -280,6 +285,6 @@ mod tests {
             hdiuti_info_image_system_entry.dev_entry,
             "/dev/disk2".to_string()
         );
-        assert_eq!(hdiuti_info_image_system_entry.mount_point.is_none(), true);
+        assert_eq!(hdiuti_info_image_system_entry.mount_point, "".to_string());
     }
 }
