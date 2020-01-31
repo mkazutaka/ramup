@@ -1,5 +1,6 @@
 mod application;
 mod config;
+mod env;
 mod error;
 mod maccmd;
 mod ram;
@@ -57,11 +58,11 @@ fn main() {
         if cfg_path.exists() {
             return;
         }
-        crate::config::Config::init(&cfg_path).unwrap();
+        crate::config::Config::initialize().unwrap();
         return;
     }
 
-    let ramup = Ramup::from_file(&cfg_path).unwrap();
+    let ramup = Ramup::from_file().unwrap();
 
     if let Some(matches) = matches.subcommand_matches("backup") {
         if matches.is_present("path") {

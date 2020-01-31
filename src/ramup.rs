@@ -2,37 +2,38 @@ use crate::application::Application;
 use crate::config::{Config, RAM};
 use crate::error::Result;
 use crate::maccmd::{DiskUtil, HdiUtil};
+use crate::state::State;
 use fs_extra::dir::CopyOptions;
 use shellexpand;
-use std::fs::File;
-use std::io::Read;
 use std::path::Path;
 
 #[derive(Debug, Default)]
 pub struct Ramup {
     ram: RAM,
     applications: Vec<Application>,
+    state: State,
 }
 
 impl Ramup {
     #[allow(dead_code)]
-    pub fn from_file(path: &str) -> Result<Ramup> {
-        let mut contents = String::new();
-        let mut file = File::open(&path)?;
-        file.read_to_string(&mut contents)?;
-        let config: Config = toml::from_str(&contents).unwrap();
+    pub fn from_file() -> Result<Ramup> {
+        let config: Config = Config::new();
+        let state: State = State::new();
         Ok(Ramup {
             ram: config.ram,
             applications: config.applications,
+            state,
         })
     }
 
     #[allow(dead_code)]
     pub fn from_str(contents: &str) -> Result<Ramup> {
         let config: Config = toml::from_str(contents).unwrap();
+        let state: State = State::new();
         Ok(Ramup {
             ram: config.ram,
             applications: config.applications,
+            state,
         })
     }
 
@@ -152,6 +153,10 @@ mod tests {
         let target_tmp_dir = check!(TempDir::new("ramup-target"));
         let target_path = target_tmp_dir.path();
         let target_str = target_path.to_str().unwrap();
+
+        let dir = TempDir::new("ramup-for-test").unwrap();
+        let path = dir.path().join("state.toml").to_string_lossy().to_string();
+        std::env::set_var(crate::env::KEY_STATE_PATH, path);
 
         let toml = format!(
             r#"

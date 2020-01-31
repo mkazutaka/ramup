@@ -18,6 +18,7 @@ rusync = "0.5.2"
 plist = "0.5"
 anyhow = "1.0"
 thiserror = "1.0"
+path_abs = "0.5"
 
 [dev-dependencies]
 tempfile = "3"

@@ -1,10 +1,12 @@
 use crate::application::Application;
 use crate::config::RAM;
+use crate::env;
 use crate::error::Result;
 use serde::Deserialize;
+//use std::env;
+use std::fs;
 use std::fs::File;
 use std::io::Write;
-use std::path::Path;
 
 #[derive(Debug, Deserialize, Default)]
 #[serde(default)]
@@ -14,7 +16,14 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn init<P: AsRef<Path>>(path: &P) -> Result<()> {
+    pub fn new() -> Self {
+        let cp = env::get_config_path();
+        let c = fs::read_to_string(&cp).unwrap();
+        let config: Config = toml::from_str(&c).unwrap();
+        config
+    }
+
+    pub fn initialize() -> Result<()> {
         let initial = r#"
 [ram]
 name = "RAMDiskByRamup"
@@ -25,7 +34,8 @@ size = 8388608
 # name = "example"
         "#;
 
-        let mut file = File::create(&path)?;
+        let cp = env::get_config_path();
+        let mut file = File::create(&cp)?;
         file.write_all(initial.as_bytes())?;
         Ok(())
     }
@@ -43,7 +53,11 @@ mod tests {
 
         let dir = TempDir::new("ramup_for_test").unwrap();
         let config = dir.path().join("config.toml");
-        Config::init(&config).unwrap();
+        std::env::set_var(
+            env::KEY_CONFIG_PATH,
+            dir.path().join("config.toml").to_str().unwrap(),
+        );
+        Config::initialize().unwrap();
 
         let mut file = File::open(&config).unwrap();
         let mut contents = String::new();
