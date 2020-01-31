@@ -15,6 +15,17 @@ fn main() {
         .version("v0.1.0")
         .author("mkazutaka <paper.sheet.kami@gmail.com")
         .subcommand(
+            SubCommand::with_name("init")
+                .author("initialize ramup's config")
+                .arg(
+                    Arg::with_name("path")
+                        .short("p")
+                        .long("path")
+                        .takes_value(true)
+                        .help("Target path to backup"),
+                ),
+        )
+        .subcommand(
             SubCommand::with_name("backup")
                 .author("backup to RAM Disk")
                 .arg(
@@ -39,8 +50,18 @@ fn main() {
         .subcommand(SubCommand::with_name("clean").author("clean RAM Disk"))
         .get_matches();
 
-    let cfg = shellexpand::tilde("~/.config/ramup/config.toml").to_string();
-    let ramup = Ramup::from_file(&cfg).unwrap();
+    let cfg_path = shellexpand::tilde("~/.config/ramup/config.toml").to_string();
+
+    if matches.subcommand_matches("init").is_some() {
+        let cfg_path = std::path::Path::new(&cfg_path);
+        if cfg_path.exists() {
+            return;
+        }
+        crate::config::Config::init(&cfg_path).unwrap();
+        return;
+    }
+
+    let ramup = Ramup::from_file(&cfg_path).unwrap();
 
     if let Some(matches) = matches.subcommand_matches("backup") {
         if matches.is_present("path") {

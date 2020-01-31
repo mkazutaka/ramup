@@ -53,7 +53,7 @@ impl Ramup {
         let path = shellexpand::tilde(path).to_string();
         let path = Path::new(&path);
         let ram_path = Path::new(&self.ram.mount_path)
-            .join(&self.ram.devname)
+            .join(&self.ram.name)
             .join(path.strip_prefix("/")?);
         let ram_parent_path = ram_path.parent().unwrap();
 
@@ -80,7 +80,7 @@ impl Ramup {
         let path = Path::new(path);
         let parent_path = path.parent().unwrap();
         let ram_path = Path::new(&self.ram.mount_path)
-            .join(&self.ram.devname)
+            .join(&self.ram.name)
             .join(path.strip_prefix("/")?);
 
         std::fs::remove_file(path)?;
@@ -96,18 +96,18 @@ impl Ramup {
     }
 
     fn mount(&self) -> Result<()> {
-        if HdiUtil::exist_volume(&self.ram.devname)? {
+        if HdiUtil::exist_volume(&self.ram.name)? {
             return Ok(());
         }
         let mountpoint = HdiUtil::attach(self.ram.size)?;
-        DiskUtil::erasevolume(&self.ram.devname, &mountpoint)
+        DiskUtil::erasevolume(&self.ram.name, &mountpoint)
     }
 
     fn unmount(&self) -> Result<()> {
-        if !HdiUtil::exist_volume(&self.ram.devname)? {
+        if !HdiUtil::exist_volume(&self.ram.name)? {
             return Ok(());
         }
-        HdiUtil::detach_volume(&self.ram.devname)
+        HdiUtil::detach_volume(&self.ram.name)
     }
 }
 
@@ -131,7 +131,7 @@ mod tests {
     fn from_str() {
         let t = r#"
         [ram]
-        devname = "RAMDisk"
+        name = "RAMDisk"
         size = 8388607
 
         [[applications]]
@@ -139,7 +139,7 @@ mod tests {
         restart = false
         "#;
         let ramup = check!(Ramup::from_str(t));
-        assert_eq!(ramup.ram.devname, "RAMDisk".to_string())
+        assert_eq!(ramup.ram.name, "RAMDisk".to_string())
     }
 
     #[test]
@@ -172,7 +172,7 @@ mod tests {
 
         // Is Correct SymLink
         let sym_file_path = mount_path
-            .join(&ramup.ram.devname)
+            .join(&ramup.ram.name)
             .join(target_path.strip_prefix("/").unwrap());
         assert_eq!(sym_file_path, check!(fs::read_link(target_str)));
 
