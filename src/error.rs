@@ -1,3 +1,4 @@
+use anyhow;
 use fs_extra;
 use plist;
 use std;
@@ -9,6 +10,9 @@ pub type Result<T> = std::result::Result<T, AppError>;
 pub enum AppError {
     #[error("FailedCommand: {0}")]
     CommandError(String),
+
+    #[error(transparent)]
+    Other(#[from] anyhow::Error),
 }
 
 impl From<std::io::Error> for AppError {

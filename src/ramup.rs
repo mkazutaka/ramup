@@ -2,9 +2,12 @@ use crate::application::Application;
 use crate::config::{Config, RAM};
 use crate::error::Result;
 use crate::maccmd::{DiskUtil, HdiUtil};
+use crate::path::AbsPath;
 use crate::state::State;
+use anyhow::Context;
 use fs_extra::dir::CopyOptions;
 use shellexpand;
+use std::convert::TryFrom;
 use std::path::Path;
 
 #[derive(Debug, Default)]
@@ -18,7 +21,7 @@ impl Ramup {
     #[allow(dead_code)]
     pub fn from_file() -> Result<Ramup> {
         let config: Config = Config::new();
-        let state: State = State::new();
+        let state: State = State::new_from_file()?;
         Ok(Ramup {
             ram: config.ram,
             applications: config.applications,
@@ -39,30 +42,31 @@ impl Ramup {
 
     #[allow(dead_code)]
     pub fn backup_all(&self) -> Result<()> {
-        self.mount()?;
         for app in &self.applications {
             for path in &app.paths {
-                self.backup(path.as_str())?
+                self.backup(path)?
             }
         }
         Ok(())
     }
 
     #[allow(dead_code)]
-    pub fn backup(&self, path: &str) -> Result<()> {
+    pub fn backup<P: AsRef<Path>>(&self, s_path: P) -> Result<()> {
         self.mount()?;
-        let path = shellexpand::tilde(path).to_string();
-        let path = Path::new(&path);
-        let ram_path = Path::new(&self.ram.mount_path)
-            .join(&self.ram.name)
-            .join(path.strip_prefix("/")?);
-        let ram_parent_path = ram_path.parent().unwrap();
 
-        std::fs::create_dir_all(ram_parent_path)?;
+        let t_path = AbsPath::try_from(&self.ram.mount_path)?
+            .join(&self.ram.name)?
+            .join(&s_path)?;
+        let t_dir = t_path.parent()?;
+
+        std::fs::create_dir_all(&t_dir)?;
         let mut option = CopyOptions::new();
         option.copy_inside = true;
-        fs_extra::dir::move_dir(path, ram_parent_path, &option)?;
-        std::os::unix::fs::symlink(ram_path, path)?;
+        fs_extra::dir::move_dir(&s_path, &t_dir, &option)?;
+        std::os::unix::fs::symlink(t_path, s_path)?;
+
+        //        self.state.add_and_save(path);
+
         Ok(())
     }
 
@@ -70,24 +74,25 @@ impl Ramup {
     pub fn restore_all(&self) -> Result<()> {
         for app in &self.applications {
             for path in &app.paths {
-                self.restore(path.as_str())?
+                self.restore(path)?
             }
         }
         self.unmount()
     }
 
     #[allow(dead_code)]
-    pub fn restore(&self, path: &str) -> Result<()> {
-        let path = Path::new(path);
-        let parent_path = path.parent().unwrap();
-        let ram_path = Path::new(&self.ram.mount_path)
-            .join(&self.ram.name)
-            .join(path.strip_prefix("/")?);
+    pub fn restore<P: AsRef<Path>>(&self, t_path: P) -> Result<()> {
+        let t_path: &Path = t_path.as_ref();
+        let t_dir = t_path.parent().with_context(|| "There isn't parent path")?;
 
-        std::fs::remove_file(path)?;
+        let s_path = AbsPath::try_from(&self.ram.mount_path)?
+            .join(&self.ram.name)?
+            .join(&t_path)?;
+
+        std::fs::remove_file(t_path)?;
         let mut option = CopyOptions::new();
         option.copy_inside = true;
-        fs_extra::dir::move_dir(ram_path, parent_path, &option)?;
+        fs_extra::dir::move_dir(s_path, t_dir, &option)?;
         Ok(())
     }
 
@@ -115,9 +120,9 @@ impl Ramup {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::serial;
     use std::fs;
     use tempdir::TempDir;
-    use serial_test::serial;
 
     macro_rules! check {
         ($e:expr) => {

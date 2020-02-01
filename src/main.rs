@@ -3,6 +3,7 @@ mod config;
 mod env;
 mod error;
 mod maccmd;
+mod path;
 mod ram;
 mod ramup;
 mod state;
@@ -11,6 +12,7 @@ use crate::ramup::Ramup;
 use anyhow::Result;
 use clap::{App, Arg, SubCommand};
 use shellexpand;
+use std::path::Path;
 
 fn main() -> Result<()> {
     let matches = App::new("ramup")
@@ -63,15 +65,15 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
-    let ramup = Ramup::from_file().unwrap();
+    let ramup = Ramup::from_file()?;
 
     if let Some(matches) = matches.subcommand_matches("backup") {
         if matches.is_present("path") {
             if let Some(path) = matches.value_of("path") {
-                ramup.backup(path).unwrap();
+                ramup.backup(path)?;
             }
         } else {
-            ramup.backup_all().unwrap();
+            ramup.backup_all()?;
         }
         return Ok(());
     }

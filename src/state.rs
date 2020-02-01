@@ -2,6 +2,7 @@ use crate::env;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
+use anyhow::Result;
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct State {
@@ -21,18 +22,43 @@ impl State {
     }
 
     #[allow(dead_code)]
-    pub fn add<P: AsRef<Path>>(&mut self, added: P) {
-        self.backup_paths
-            .push(added.as_ref().to_string_lossy().into());
-        self.save();
+    pub fn new_from_file() -> Result<Self> {
+        let sp = env::get_state_path();
+        if !Path::new(&sp).exists() {
+            return Ok(State::default());
+        }
+        let c = fs::read_to_string(&sp)?;
+        let state: State = toml::from_str(&c)?;
+        Ok(state)
     }
 
     #[allow(dead_code)]
-    pub fn remove<P: AsRef<Path>>(&mut self, removed: P) {
+    pub fn new_from_str(toml: &str) -> Result<Self> {
+        let state: State = toml::from_str(&toml)?;
+        Ok(state)
+    }
+
+    #[allow(dead_code)]
+    pub fn add_and_save<P: AsRef<Path>>(&mut self, added: P) {
+        self.add(added);
+        self.save();
+    }
+
+    fn add<P: AsRef<Path>>(&mut self, added: P) {
+        self.backup_paths
+            .push(added.as_ref().to_string_lossy().into());
+    }
+
+    #[allow(dead_code)]
+    pub fn remove_and_save<P: AsRef<Path>>(&mut self, removed: P) {
+        self.remove(removed);
+        self.save();
+    }
+
+    fn remove<P: AsRef<Path>>(&mut self, removed: P) {
         let path = removed.as_ref().to_str().unwrap();
         let index = self.backup_paths.iter().position(|x| *x == path).unwrap();
         self.backup_paths.remove(index);
-        self.save();
     }
 
     #[allow(dead_code)]
@@ -49,8 +75,8 @@ impl State {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempdir::TempDir;
     use serial_test::serial;
+    use tempdir::TempDir;
 
     const TOML: &str = r#"
 backup_paths = [
@@ -61,33 +87,45 @@ backup_paths = [
 "#;
 
     #[test]
-    #[serial]
-    fn add() {
-        let dir = TempDir::new("ramup-for-test").unwrap();
-        let path = dir.path().join("state.toml").to_string_lossy().to_string();
-        std::env::set_var(env::KEY_STATE_PATH, path);
+    fn new_from_str() {
+        let state = State::new_from_str(TOML).unwrap();
+        assert_eq!("/this/is/path/1", state.backup_paths[0])
+    }
 
+    #[test]
+    fn add() {
         let mut state: State = toml::from_str(&TOML).unwrap();
         state.add("/this/is/new/path");
         assert_eq!("/this/is/new/path", state.backup_paths.last().unwrap());
+    }
 
-        std::env::remove_var(env::KEY_STATE_PATH);
+    #[test]
+    fn remove() {
+        let mut state: State = toml::from_str(&TOML).unwrap();
+        assert_eq!(3, state.backup_paths.len());
+        assert_eq!("/this/is/path/3", state.backup_paths.last().unwrap());
+
+        let removed_path = Path::new("/this/is/path/3");
+        state.remove(removed_path);
+        assert_eq!(2, state.backup_paths.len());
+        assert_eq!("/this/is/path/2", state.backup_paths.last().unwrap());
     }
 
     #[test]
     #[serial]
-    fn remove() {
-        let dir = TempDir::new("ramup-for-test").unwrap();
-        let path = dir.path().join("state.toml").to_string_lossy().to_string();
-        std::env::set_var(env::KEY_STATE_PATH, path);
+    fn save() {
+        let tmp_dir = TempDir::new("ramup").unwrap();
+        let tmp_path = tmp_dir
+            .path()
+            .join("state.toml")
+            .to_string_lossy()
+            .to_string();
+        std::env::set_var(env::KEY_STATE_PATH, tmp_path);
 
-        let mut state: State = toml::from_str(&TOML).unwrap();
-        let new_path = Path::new("/this/is/path/3");
-        assert_eq!(3, state.backup_paths.len());
+        let state: State = toml::from_str(&TOML).unwrap();
+        state.save();
+        let state = State::new();
         assert_eq!("/this/is/path/3", state.backup_paths.last().unwrap());
-        state.remove(new_path);
-        assert_eq!(2, state.backup_paths.len());
-        assert_eq!("/this/is/path/2", state.backup_paths.last().unwrap());
 
         std::env::remove_var(env::KEY_STATE_PATH);
     }
