@@ -8,10 +8,11 @@ mod ramup;
 mod state;
 
 use crate::ramup::Ramup;
+use anyhow::Result;
 use clap::{App, Arg, SubCommand};
 use shellexpand;
 
-fn main() {
+fn main() -> Result<()> {
     let matches = App::new("ramup")
         .version("v0.1.0")
         .author("mkazutaka <paper.sheet.kami@gmail.com")
@@ -56,10 +57,10 @@ fn main() {
     if matches.subcommand_matches("init").is_some() {
         let cfg_path = std::path::Path::new(&cfg_path);
         if cfg_path.exists() {
-            return;
+            return Ok(());
         }
         crate::config::Config::initialize().unwrap();
-        return;
+        return Ok(());
     }
 
     let ramup = Ramup::from_file().unwrap();
@@ -72,7 +73,7 @@ fn main() {
         } else {
             ramup.backup_all().unwrap();
         }
-        return;
+        return Ok(());
     }
 
     if let Some(matches) = matches.subcommand_matches("restore") {
@@ -83,11 +84,12 @@ fn main() {
         } else {
             ramup.restore_all().unwrap();
         }
-        return;
     }
 
     if matches.subcommand_matches("clean").is_some() {
         ramup.clean().unwrap();
-        return;
+        return Ok(());
     }
+
+    Ok(())
 }

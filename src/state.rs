@@ -50,6 +50,7 @@ impl State {
 mod tests {
     use super::*;
     use tempdir::TempDir;
+    use serial_test::serial;
 
     const TOML: &str = r#"
 backup_paths = [
@@ -60,6 +61,7 @@ backup_paths = [
 "#;
 
     #[test]
+    #[serial]
     fn add() {
         let dir = TempDir::new("ramup-for-test").unwrap();
         let path = dir.path().join("state.toml").to_string_lossy().to_string();
@@ -68,9 +70,12 @@ backup_paths = [
         let mut state: State = toml::from_str(&TOML).unwrap();
         state.add("/this/is/new/path");
         assert_eq!("/this/is/new/path", state.backup_paths.last().unwrap());
+
+        std::env::remove_var(env::KEY_STATE_PATH);
     }
 
     #[test]
+    #[serial]
     fn remove() {
         let dir = TempDir::new("ramup-for-test").unwrap();
         let path = dir.path().join("state.toml").to_string_lossy().to_string();
@@ -83,5 +88,7 @@ backup_paths = [
         state.remove(new_path);
         assert_eq!(2, state.backup_paths.len());
         assert_eq!("/this/is/path/2", state.backup_paths.last().unwrap());
+
+        std::env::remove_var(env::KEY_STATE_PATH);
     }
 }

@@ -117,6 +117,7 @@ mod tests {
     use super::*;
     use std::fs;
     use tempdir::TempDir;
+    use serial_test::serial;
 
     macro_rules! check {
         ($e:expr) => {
@@ -128,6 +129,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     #[cfg(target_os = "macos")]
     fn from_str() {
         let t = r#"
@@ -144,6 +146,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     #[cfg(target_os = "macos")]
     fn backup_and_restore() {
         let mount_tmp_dir = check!(TempDir::new("ramup-volume-ram"));

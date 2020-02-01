@@ -23,4 +23,4 @@ path_abs = "0.5"
 [dev-dependencies]
 tempfile = "3"
 tempdir = "0.3"
-
+serial_test = "0.3"

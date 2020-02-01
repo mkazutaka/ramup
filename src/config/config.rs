@@ -44,13 +44,14 @@ size = 8388608
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::serial;
+    use std::fs::File;
+    use std::io::prelude::*;
     use tempdir::TempDir;
 
     #[test]
+    #[serial]
     fn create_file() {
-        use std::fs::File;
-        use std::io::prelude::*;
-
         let dir = TempDir::new("ramup_for_test").unwrap();
         let config = dir.path().join("config.toml");
         std::env::set_var(
@@ -62,9 +63,10 @@ mod tests {
         let mut file = File::open(&config).unwrap();
         let mut contents = String::new();
         file.read_to_string(&mut contents).unwrap();
-
         let config: Config = toml::from_str(&contents).unwrap();
         assert_eq!(config.ram.name, "RAMDiskByRamup");
-        assert_eq!(config.ram.size, 8388608)
+        assert_eq!(config.ram.size, 8388608);
+
+        std::env::remove_var(env::KEY_CONFIG_PATH);
     }
 }
