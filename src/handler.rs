@@ -56,7 +56,7 @@ impl Handler {
     }
 
     pub fn restore_all(&mut self) -> Result<()> {
-        Handler::_restore_all(&self.ram, &self.apps, &mut self.state);
+        Handler::_restore_all(&self.ram, &self.apps, &mut self.state)?;
         self.clean()
     }
 
@@ -70,7 +70,7 @@ impl Handler {
     }
 
     pub fn restore<P: AsRef<Path>>(&mut self, t_path: P) -> Result<()> {
-        Handler::_restore(t_path, &self.ram, &mut self.state);
+        Handler::_restore(t_path, &self.ram, &mut self.state)?;
         Ok(())
     }
 
@@ -87,7 +87,7 @@ impl Handler {
         option.copy_inside = true;
         fs_extra::dir::move_dir(&s_path, t_dir, &option)?;
 
-        state.remove_and_save(&t_path);
+        state.remove_and_save(&t_path)?;
         Ok(())
     }
 
@@ -109,5 +109,72 @@ impl Handler {
             return Ok(());
         }
         HdiUtil::detach_volume(&ram.name)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serial_test::serial;
+    use std::fs;
+    use tempdir::TempDir;
+
+    macro_rules! check {
+        ($e:expr) => {
+            match $e {
+                Ok(t) => t,
+                Err(e) => panic!("{} failed with: {}", stringify!($e), e),
+            }
+        };
+    }
+
+    #[test]
+    #[serial]
+    #[cfg(target_os = "macos")]
+    fn backup_and_restore() {
+        let mount_tmp_dir = check!(TempDir::new("ramup-source"));
+        let mount_path = mount_tmp_dir.path();
+        let mount_str = mount_path.to_str().unwrap();
+
+        let target_tmp_dir = check!(TempDir::new("ramup-target"));
+        let target_path = target_tmp_dir.path();
+        let target_str = target_path.to_str().unwrap();
+
+        let dir = TempDir::new("ramup-config").unwrap();
+        let path = dir.path().join("state.toml").to_string_lossy().to_string();
+        std::env::set_var(crate::env::KEY_STATE_PATH, path);
+
+        let toml = format!(
+            r#"
+                 [ram]
+                 devname = "RAMDisk"
+                 size = 8388607
+                 mount_path = "{}"
+            "#,
+            mount_str
+        );
+        let ram = RAM::new_from_str(&toml).unwrap();
+        let mut state = State::load();
+
+        // Backup
+        check!(Handler::mount(&ram));
+        check!(Handler::_backup(target_str, &ram, &mut state));
+        let m = check!(fs::symlink_metadata(target_str));
+        assert_eq!(m.file_type().is_symlink(), true);
+        assert_eq!(m.file_type().is_dir(), false);
+
+        // Is Correct SymLink
+        //        let sym_file_path = mount_path
+        //            .join(&ram.name)
+        //            .join(target_path.strip_prefix("/").unwrap());
+        //        assert_eq!(sym_file_path, check!(fs::read_link(target_str)));
+
+        // Restore
+        check!(Handler::_restore(target_str, &ram, &mut state));
+        let m = check!(fs::symlink_metadata(target_str));
+        assert_eq!(m.file_type().is_symlink(), false);
+        assert_eq!(m.file_type().is_dir(), true);
+
+        check!(Handler::unmount(&ram));
     }
 }

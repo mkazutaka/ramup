@@ -1,12 +1,10 @@
 mod application;
 mod cfg;
-mod config;
 mod env;
 mod handler;
 mod maccmd;
 mod path;
 mod ram;
-mod ramup;
 mod state;
 
 use anyhow::Result;
