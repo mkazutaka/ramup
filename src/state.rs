@@ -115,7 +115,7 @@ backup_paths = [
         assert_eq!("/this/is/path/3", state.backup_paths.last().unwrap());
 
         let removed_path = Path::new("/this/is/path/3");
-        state.remove(removed_path);
+        state.remove(removed_path).unwrap();
         assert_eq!(2, state.backup_paths.len());
         assert_eq!("/this/is/path/2", state.backup_paths.last().unwrap());
     }
@@ -132,7 +132,7 @@ backup_paths = [
         std::env::set_var(env::KEY_STATE_PATH, tmp_path);
 
         let state: State = toml::from_str(&TOML).unwrap();
-        state.save();
+        state.save().unwrap();
         let state = State::load();
         assert_eq!("/this/is/path/3", state.backup_paths.last().unwrap());
 

@@ -117,11 +117,10 @@ mod tests {
     #[serial]
     fn new() {
         let home = env::var("HOME").unwrap();
+        let current = env::current_dir().unwrap();
 
         let abs = AbsPath::new("~/./hoge").unwrap();
         assert_eq!(format!("{}/./hoge", home), abs.to_string());
-
-        let current = env::current_dir().unwrap();
         let abs = AbsPath::new("hoge").unwrap();
         assert_eq!(
             format!("{}/hoge", current.to_str().unwrap()),
@@ -145,7 +144,7 @@ mod tests {
     #[test]
     #[serial]
     fn parent() {
-        let mut abs = AbsPath::try_from("~/./hoge").unwrap();
+        let abs = AbsPath::try_from("~/./hoge").unwrap();
         let abs = abs.parent().unwrap();
         let home = env::var("HOME").unwrap();
         assert_eq!(format!("{}", home), abs.to_string());
@@ -156,11 +155,11 @@ mod tests {
     fn join() {
         let home = env::var("HOME").unwrap();
 
-        let mut abs = AbsPath::try_from("~/./hoge").unwrap();
+        let abs = AbsPath::try_from("~/./hoge").unwrap();
         let abs = abs.join("fuga").unwrap();
         assert_eq!(format!("{}/./hoge/fuga", home), abs.to_string());
 
-        let mut abs = AbsPath::try_from("~/./hoge").unwrap();
+        let abs = AbsPath::try_from("~/./hoge").unwrap();
         let abs = abs.join("/fuga").unwrap();
         assert_eq!(format!("{}/./hoge/fuga", home), abs.to_string());
     }
