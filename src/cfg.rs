@@ -33,13 +33,12 @@ impl Config {
 
     pub fn load() -> Result<Self> {
         let cp = env::get_config_path();
-        match Path::new(&cp).exists() {
-            true => {
-                let c = fs::read_to_string(&cp)?;
-                let config: Config = toml::from_str(&c)?;
-                Ok(config)
-            }
-            false => Config::new(),
+        if Path::new(&cp).exists() {
+            let c = fs::read_to_string(&cp)?;
+            let config: Config = toml::from_str(&c)?;
+            Ok(config)
+        } else {
+            Config::new()
         }
     }
 

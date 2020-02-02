@@ -15,7 +15,7 @@ impl AbsPath {
         let p = p.as_ref().to_string_lossy();
         let p = tilde(&p);
 
-        if p.find("~").is_some() {
+        if p.find('~').is_some() {
             return Err(anyhow::anyhow!("Invalid Path"));
         }
 
@@ -44,12 +44,11 @@ impl AbsPath {
 
     #[allow(dead_code)]
     pub fn join<P: AsRef<Path>>(&self, path: P) -> Result<Self> {
-        let path = match path.as_ref().has_root() {
-            true => {
-                let path = path.as_ref().strip_prefix("/")?;
-                Path::new(&self.path).join(path)
-            }
-            false => Path::new(&self.path).join(path),
+        let path = if path.as_ref().has_root() {
+            let path = path.as_ref().strip_prefix("/")?;
+            Path::new(&self.path).join(path)
+        } else {
+            Path::new(&self.path).join(path)
         };
 
         Ok(AbsPath {

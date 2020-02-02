@@ -3,7 +3,7 @@ use serde::de::Deserializer;
 use serde::Deserialize;
 use std::path::Path;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Application {
     pub name: String,
     pub restart: Option<bool>,

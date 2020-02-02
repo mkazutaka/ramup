@@ -16,7 +16,8 @@ pub struct Handler {
 }
 
 impl Handler {
-    pub fn new(ram: RAM, apps: Vec<Application>, state: State) -> Self {
+    pub fn new(ram: RAM, apps: &[Application], state: State) -> Self {
+        let apps = apps.to_vec();
         Handler { ram, apps, state }
     }
 
@@ -25,7 +26,7 @@ impl Handler {
         Handler::_backup_all(&self.ram, &self.apps, &mut self.state)
     }
 
-    fn _backup_all(ram: &RAM, apps: &Vec<Application>, state: &mut State) -> Result<()> {
+    fn _backup_all(ram: &RAM, apps: &[Application], state: &mut State) -> Result<()> {
         for app in apps {
             for path in &app.paths {
                 Handler::_backup(path, ram, state)?
@@ -60,7 +61,7 @@ impl Handler {
         self.clean()
     }
 
-    fn _restore_all(ram: &RAM, apps: &Vec<Application>, state: &mut State) -> Result<()> {
+    fn _restore_all(ram: &RAM, apps: &[Application], state: &mut State) -> Result<()> {
         for app in apps {
             for path in &app.paths {
                 Handler::_restore(path, ram, state)?

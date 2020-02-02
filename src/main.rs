@@ -30,7 +30,7 @@ fn main() -> Result<()> {
         return cfg::Config::initialize();
     }
 
-    let mut handler = handler::Handler::new(ram, apps, state);
+    let mut handler = handler::Handler::new(ram, &apps, state);
 
     if let Some(matches) = arg_matches.subcommand_matches(SUB_COMMAND_BACKUP) {
         if matches.is_present("path") {
