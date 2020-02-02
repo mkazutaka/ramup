@@ -1,0 +1,25 @@
+name: ramup
+version: "1.0"
+author: mkazutaka <paper.sheet.kami@gmail.com>
+about: backup to RAMDisk; restore from RAMDisk
+subcommands:
+- init:
+    about: create init file for ramup
+- backup:
+    about: backup path to RAMDisk
+    args:
+    - path:
+        short: p
+        long: path
+        takes_value: true
+        help: Target path to backup
+- restore:
+    about: restore path from RAMDisk
+    args:
+    - path:
+        short: p
+        long: path
+        takes_value: true
+        help: Target path to restore
+- clean:
+    about: clean RAMDisk

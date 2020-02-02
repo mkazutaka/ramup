@@ -1,4 +1,4 @@
-use crate::error::{AppError, Result};
+use anyhow::Result;
 use plist;
 use serde::Deserialize;
 use std::process::Command;
@@ -11,9 +11,7 @@ impl HdiUtil {
         let output = Command::new("hdiutil").args(&["info", "-plist"]).output()?;
 
         if !output.status.success() {
-            return Err(AppError::CommandError(
-                String::from_utf8(output.stderr).unwrap(),
-            ));
+            anyhow::bail!("failed to hdiutil command: {:?}", output.stderr);
         };
 
         let output = output.stdout.to_vec();
@@ -50,9 +48,7 @@ impl HdiUtil {
             .output()?;
 
         if !output.status.success() {
-            return Err(AppError::CommandError(
-                String::from_utf8(output.stderr).unwrap(),
-            ));
+            anyhow::bail!("failed to hdiutil command: {:?}", output.stderr);
         }
 
         let output = String::from_utf8(output.stdout).unwrap();
@@ -66,9 +62,7 @@ impl HdiUtil {
             .output()?;
 
         if !output.status.success() {
-            return Err(AppError::CommandError(
-                String::from_utf8(output.stderr).unwrap(),
-            ));
+            anyhow::bail!("failed to hdiutil command: {:?}", output.stderr);
         }
         Ok(())
     }

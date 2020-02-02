@@ -1,92 +1,61 @@
 mod application;
-mod config;
-mod error;
+mod cfg;
+mod env;
+mod handler;
 mod maccmd;
+mod path;
 mod ram;
-mod ramup;
 mod state;
 
-use crate::ramup::Ramup;
-use clap::{App, Arg, SubCommand};
-use shellexpand;
+use anyhow::Result;
+use clap::load_yaml;
+use clap::App;
 
-fn main() {
-    let matches = App::new("ramup")
-        .version("v0.1.0")
-        .author("mkazutaka <paper.sheet.kami@gmail.com")
-        .subcommand(
-            SubCommand::with_name("init")
-                .author("initialize ramup's config")
-                .arg(
-                    Arg::with_name("path")
-                        .short("p")
-                        .long("path")
-                        .takes_value(true)
-                        .help("Target path to backup"),
-                ),
-        )
-        .subcommand(
-            SubCommand::with_name("backup")
-                .author("backup to RAM Disk")
-                .arg(
-                    Arg::with_name("path")
-                        .short("p")
-                        .long("path")
-                        .takes_value(true)
-                        .help("Target path to backup"),
-                ),
-        )
-        .subcommand(
-            SubCommand::with_name("restore")
-                .author("restore from RAM Disk")
-                .arg(
-                    Arg::with_name("path")
-                        .short("p")
-                        .long("path")
-                        .takes_value(true)
-                        .help("Target path to backup"),
-                ),
-        )
-        .subcommand(SubCommand::with_name("clean").author("clean RAM Disk"))
-        .get_matches();
+static SUB_COMMAND_INIT: &str = "init";
+static SUB_COMMAND_BACKUP: &str = "backup";
+static SUB_COMMAND_RESTORE: &str = "restore";
+static SUB_COMMAND_CLEAN: &str = "clean";
 
-    let cfg_path = shellexpand::tilde("~/.config/ramup/config.toml").to_string();
+fn main() -> Result<()> {
+    let yaml = load_yaml!("cli.yml");
+    let arg_matches = App::from_yaml(yaml).get_matches();
 
-    if matches.subcommand_matches("init").is_some() {
-        let cfg_path = std::path::Path::new(&cfg_path);
-        if cfg_path.exists() {
-            return;
-        }
-        crate::config::Config::init(&cfg_path).unwrap();
-        return;
+    let config = cfg::Config::load()?;
+
+    let state = state::State::load();
+    let apps = config.applications;
+    let ram = config.ram;
+
+    if arg_matches.subcommand_matches(SUB_COMMAND_INIT).is_some() {
+        return cfg::Config::initialize();
     }
 
-    let ramup = Ramup::from_file(&cfg_path).unwrap();
+    let mut handler = handler::Handler::new(ram, apps, state);
 
-    if let Some(matches) = matches.subcommand_matches("backup") {
+    if let Some(matches) = arg_matches.subcommand_matches(SUB_COMMAND_BACKUP) {
         if matches.is_present("path") {
             if let Some(path) = matches.value_of("path") {
-                ramup.backup(path).unwrap();
+                handler.backup(path)?;
             }
         } else {
-            ramup.backup_all().unwrap();
+            handler.backup_all()?;
         }
-        return;
+        return Ok(());
     }
 
-    if let Some(matches) = matches.subcommand_matches("restore") {
+    if let Some(matches) = arg_matches.subcommand_matches(SUB_COMMAND_RESTORE) {
         if matches.is_present("path") {
             if let Some(path) = matches.value_of("path") {
-                ramup.restore(path).unwrap();
+                handler.restore(path)?;
             }
         } else {
-            ramup.restore_all().unwrap();
+            handler.restore_all()?;
         }
-        return;
     }
 
-    if matches.subcommand_matches("clean").is_some() {
-        ramup.clean().unwrap();
-        return;
+    if arg_matches.subcommand_matches(SUB_COMMAND_CLEAN).is_some() {
+        handler.clean()?;
     }
+
+    Ok(())
 }
