@@ -1,4 +1,4 @@
-use crate::error::{AppError, Result};
+use anyhow::Result;
 use std::process::Command;
 
 pub struct DiskUtil {}
@@ -11,9 +11,7 @@ impl DiskUtil {
             .output()?;
 
         if !output.status.success() {
-            return Err(AppError::CommandError(
-                String::from_utf8(output.stderr).unwrap(),
-            ));
+            anyhow::bail!("failed to diskutil command: {:?}", output.stderr);
         };
 
         Ok(())
@@ -22,12 +20,12 @@ impl DiskUtil {
 
 #[cfg(test)]
 mod tests {
+    use crate::maccmd::DiskUtil;
+    use crate::maccmd::HdiUtil;
+
     #[test]
     #[cfg(target_os = "macos")]
     fn erasevolume() {
-        use crate::maccmd::DiskUtil;
-        use crate::maccmd::HdiUtil;
-
         let name = "RAMDiskForTest";
         let mount_point = HdiUtil::attach(100000).unwrap();
 

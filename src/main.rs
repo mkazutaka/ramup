@@ -1,19 +1,17 @@
 mod application;
+mod cfg;
 mod config;
 mod env;
-mod error;
+mod handler;
 mod maccmd;
 mod path;
 mod ram;
 mod ramup;
 mod state;
 
-use crate::ramup::Ramup;
 use anyhow::Result;
 use clap::load_yaml;
-use clap::{App, Arg, ArgMatches, SubCommand};
-use shellexpand;
-use std::path::Path;
+use clap::App;
 
 static SUB_COMMAND_INIT: &str = "init";
 static SUB_COMMAND_BACKUP: &str = "backup";
@@ -24,45 +22,41 @@ fn main() -> Result<()> {
     let yaml = load_yaml!("cli.yml");
     let arg_matches = App::from_yaml(yaml).get_matches();
 
-    let cfg_path = shellexpand::tilde("~/.config/ramup/config.toml").to_string();
+    let config = cfg::Config::load()?;
+
+    let state = state::State::load();
+    let apps = config.applications;
+    let ram = config.ram;
 
     if arg_matches.subcommand_matches(SUB_COMMAND_INIT).is_some() {
-        let cfg_path = std::path::Path::new(&cfg_path);
-        if cfg_path.exists() {
-            return Ok(());
-        }
-        crate::config::Config::initialize().unwrap();
-        return Ok(());
+        return cfg::Config::initialize();
     }
 
-    let ramup = Ramup::from_file()?;
+    let mut handler = handler::Handler::new(ram, apps, state);
 
-    if arg_matches.subcommand_matches(SUB_COMMAND_BACKUP).is_some() {
+    if let Some(matches) = arg_matches.subcommand_matches(SUB_COMMAND_BACKUP) {
         if matches.is_present("path") {
             if let Some(path) = matches.value_of("path") {
-                ramup.backup(path)?;
+                handler.backup(path)?;
             }
         } else {
-            ramup.backup_all()?;
+            handler.backup_all()?;
         }
         return Ok(());
     }
 
-    if arg_matches
-        .subcommand_matches(SUB_COMMAND_RESTORE)
-        .is_some()
-    {
+    if let Some(matches) = arg_matches.subcommand_matches(SUB_COMMAND_RESTORE) {
         if matches.is_present("path") {
             if let Some(path) = matches.value_of("path") {
-                ramup.restore(path).unwrap();
+                handler.restore(path)?;
             }
         } else {
-            ramup.restore_all().unwrap();
+            handler.restore_all()?;
         }
     }
 
     if arg_matches.subcommand_matches(SUB_COMMAND_CLEAN).is_some() {
-        ramup.clean();
+        handler.clean()?;
     }
 
     Ok(())

@@ -1,12 +1,11 @@
 use crate::application::Application;
 use crate::config::{Config, RAM};
-use crate::error::Result;
 use crate::maccmd::{DiskUtil, HdiUtil};
 use crate::path::AbsPath;
 use crate::state::State;
 use anyhow::Context;
+use anyhow::Result;
 use fs_extra::dir::CopyOptions;
-use shellexpand;
 use std::convert::TryFrom;
 use std::path::Path;
 
@@ -19,20 +18,9 @@ pub struct Ramup {
 
 impl Ramup {
     #[allow(dead_code)]
-    pub fn from_file() -> Result<Ramup> {
-        let config: Config = Config::new();
-        let state: State = State::new_from_file()?;
-        Ok(Ramup {
-            ram: config.ram,
-            applications: config.applications,
-            state,
-        })
-    }
-
-    #[allow(dead_code)]
     pub fn from_str(contents: &str) -> Result<Ramup> {
         let config: Config = toml::from_str(contents).unwrap();
-        let state: State = State::new();
+        let state: State = State::load();
         Ok(Ramup {
             ram: config.ram,
             applications: config.applications,

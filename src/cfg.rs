@@ -1,12 +1,22 @@
 use crate::application::Application;
-use crate::config::RAM;
 use crate::env;
+use crate::ram::RAM;
 use anyhow::Result;
 use serde::Deserialize;
-//use std::env;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
+use std::path::Path;
+
+static DEFAULT_CONFIG: &str = r#"
+    [ram]
+    name = "RAMDiskByRamup"
+    size = 8388608
+
+    # Add your's first application
+    # [[applications]]
+    # name = "example"
+"#;
 
 #[derive(Debug, Deserialize, Default)]
 #[serde(default)]
@@ -16,27 +26,31 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn new() -> Self {
+    pub fn new() -> Result<Self> {
+        let config: Config = toml::from_str(DEFAULT_CONFIG)?;
+        Ok(config)
+    }
+
+    pub fn load() -> Result<Self> {
         let cp = env::get_config_path();
-        let c = fs::read_to_string(&cp).unwrap();
-        let config: Config = toml::from_str(&c).unwrap();
-        config
+        match Path::new(&cp).exists() {
+            true => {
+                let c = fs::read_to_string(&cp)?;
+                let config: Config = toml::from_str(&c)?;
+                Ok(config)
+            }
+            false => Config::new(),
+        }
     }
 
     pub fn initialize() -> Result<()> {
-        let initial = r#"
-[ram]
-name = "RAMDiskByRamup"
-size = 8388608
-
-# Add your's first application
-# [[applications]]
-# name = "example"
-        "#;
-
+        let cp = env::get_config_path();
+        if Path::new(&cp).exists() {
+            return Ok(());
+        }
         let cp = env::get_config_path();
         let mut file = File::create(&cp)?;
-        file.write_all(initial.as_bytes())?;
+        file.write_all(DEFAULT_CONFIG.as_bytes())?;
         Ok(())
     }
 }

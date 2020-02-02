@@ -1,8 +1,8 @@
 use crate::env;
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
-use anyhow::Result;
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct State {
@@ -11,7 +11,7 @@ pub struct State {
 
 impl State {
     #[allow(dead_code)]
-    pub fn new() -> Self {
+    pub fn load() -> Self {
         let sp = env::get_state_path();
         if !Path::new(&sp).exists() {
             return State::default();
@@ -39,9 +39,9 @@ impl State {
     }
 
     #[allow(dead_code)]
-    pub fn add_and_save<P: AsRef<Path>>(&mut self, added: P) {
+    pub fn add_and_save<P: AsRef<Path>>(&mut self, added: P) -> Result<()> {
         self.add(added);
-        self.save();
+        self.save()
     }
 
     fn add<P: AsRef<Path>>(&mut self, added: P) {
@@ -50,25 +50,34 @@ impl State {
     }
 
     #[allow(dead_code)]
-    pub fn remove_and_save<P: AsRef<Path>>(&mut self, removed: P) {
-        self.remove(removed);
-        self.save();
+    pub fn remove_and_save<P: AsRef<Path>>(&mut self, removed: P) -> Result<()> {
+        self.remove(removed)?;
+        self.save()
     }
 
-    fn remove<P: AsRef<Path>>(&mut self, removed: P) {
-        let path = removed.as_ref().to_str().unwrap();
-        let index = self.backup_paths.iter().position(|x| *x == path).unwrap();
+    fn remove<P: AsRef<Path>>(&mut self, removed: P) -> Result<()> {
+        let path = removed
+            .as_ref()
+            .to_str()
+            .ok_or_else(|| anyhow::anyhow!("NoneError"))?;
+        let index = self
+            .backup_paths
+            .iter()
+            .position(|x| *x == path)
+            .ok_or_else(|| anyhow::anyhow!("NoneError"))?;
         self.backup_paths.remove(index);
+        Ok(())
     }
 
     #[allow(dead_code)]
-    fn save(&self) {
+    fn save(&self) -> Result<()> {
         let sp = env::get_state_path();
         if !Path::new(&sp).exists() {
-            fs::File::create(&sp).unwrap();
+            fs::File::create(&sp)?;
         }
-        let out = toml::to_string(&self).unwrap();
-        fs::write(&sp, out).unwrap();
+        let out = toml::to_string(&self)?;
+        fs::write(&sp, out)?;
+        Ok(())
     }
 }
 
@@ -124,7 +133,7 @@ backup_paths = [
 
         let state: State = toml::from_str(&TOML).unwrap();
         state.save();
-        let state = State::new();
+        let state = State::load();
         assert_eq!("/this/is/path/3", state.backup_paths.last().unwrap());
 
         std::env::remove_var(env::KEY_STATE_PATH);
