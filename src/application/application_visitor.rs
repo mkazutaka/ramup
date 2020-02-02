@@ -2,6 +2,7 @@ use crate::application::{Application, ApplicationFile};
 use serde::de::{MapAccess, Visitor};
 use serde::export::fmt::Error;
 use serde::export::Formatter;
+use shellexpand;
 
 pub struct ApplicationVisitor;
 
@@ -41,9 +42,16 @@ impl<'de> Visitor<'de> for ApplicationVisitor {
         if app_config.restart.is_none() {
             app_config.restart = Some(default_config.restart);
         }
+
         if app_config.paths.is_empty() {
             app_config.paths = default_config.paths;
         }
+        let mut expanded_paths: Vec<String> = vec![];
+        for path in &app_config.paths {
+            let s = shellexpand::tilde(&path);
+            expanded_paths.push(String::from(s))
+        }
+        app_config.paths = expanded_paths;
 
         Ok(app_config)
     }
