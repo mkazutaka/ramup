@@ -10,53 +10,23 @@ mod state;
 
 use crate::ramup::Ramup;
 use anyhow::Result;
-use clap::{App, Arg, SubCommand};
+use clap::load_yaml;
+use clap::{App, Arg, ArgMatches, SubCommand};
 use shellexpand;
 use std::path::Path;
 
+static SUB_COMMAND_INIT: &str = "init";
+static SUB_COMMAND_BACKUP: &str = "backup";
+static SUB_COMMAND_RESTORE: &str = "restore";
+static SUB_COMMAND_CLEAN: &str = "clean";
+
 fn main() -> Result<()> {
-    let matches = App::new("ramup")
-        .version("v0.1.0")
-        .author("mkazutaka <paper.sheet.kami@gmail.com")
-        .subcommand(
-            SubCommand::with_name("init")
-                .author("initialize ramup's config")
-                .arg(
-                    Arg::with_name("path")
-                        .short("p")
-                        .long("path")
-                        .takes_value(true)
-                        .help("Target path to backup"),
-                ),
-        )
-        .subcommand(
-            SubCommand::with_name("backup")
-                .author("backup to RAM Disk")
-                .arg(
-                    Arg::with_name("path")
-                        .short("p")
-                        .long("path")
-                        .takes_value(true)
-                        .help("Target path to backup"),
-                ),
-        )
-        .subcommand(
-            SubCommand::with_name("restore")
-                .author("restore from RAM Disk")
-                .arg(
-                    Arg::with_name("path")
-                        .short("p")
-                        .long("path")
-                        .takes_value(true)
-                        .help("Target path to backup"),
-                ),
-        )
-        .subcommand(SubCommand::with_name("clean").author("clean RAM Disk"))
-        .get_matches();
+    let yaml = load_yaml!("cli.yml");
+    let arg_matches = App::from_yaml(yaml).get_matches();
 
     let cfg_path = shellexpand::tilde("~/.config/ramup/config.toml").to_string();
 
-    if matches.subcommand_matches("init").is_some() {
+    if arg_matches.subcommand_matches(SUB_COMMAND_INIT).is_some() {
         let cfg_path = std::path::Path::new(&cfg_path);
         if cfg_path.exists() {
             return Ok(());
@@ -67,7 +37,7 @@ fn main() -> Result<()> {
 
     let ramup = Ramup::from_file()?;
 
-    if let Some(matches) = matches.subcommand_matches("backup") {
+    if arg_matches.subcommand_matches(SUB_COMMAND_BACKUP).is_some() {
         if matches.is_present("path") {
             if let Some(path) = matches.value_of("path") {
                 ramup.backup(path)?;
@@ -78,7 +48,10 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
-    if let Some(matches) = matches.subcommand_matches("restore") {
+    if arg_matches
+        .subcommand_matches(SUB_COMMAND_RESTORE)
+        .is_some()
+    {
         if matches.is_present("path") {
             if let Some(path) = matches.value_of("path") {
                 ramup.restore(path).unwrap();
@@ -88,9 +61,8 @@ fn main() -> Result<()> {
         }
     }
 
-    if matches.subcommand_matches("clean").is_some() {
-        ramup.clean().unwrap();
-        return Ok(());
+    if arg_matches.subcommand_matches(SUB_COMMAND_CLEAN).is_some() {
+        ramup.clean();
     }
 
     Ok(())
