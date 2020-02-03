@@ -39,8 +39,10 @@ impl Handler {
         Handler::mount(&self.ram)?;
         Handler::_backup(&s_path, &self.ram, &mut self.state).map_err(|e| {
             if e.downcast_ref::<fs_extra::error::Error>().is_some() {
+                println!("restore: {:?}", s_path.as_ref());
                 Handler::_restore(s_path, &self.ram, &mut self.state)
-                    .with_context(|| "Failed to restore");
+                    .with_context(|| "Failed to restore")
+                    .unwrap();
             }
             e
         })
@@ -51,6 +53,16 @@ impl Handler {
             .join(&ram.name)?
             .join(&s_path)?;
         let t_dir = t_path.parent()?;
+
+        if !&s_path.as_ref().exists() {
+            println!("skip: {:?}", s_path.as_ref());
+            return Ok(());
+        } else if t_path.as_ref().exists() {
+            println!("skip: {:?}", t_path);
+            return Ok(());
+        } else {
+            println!("start: {:?}", t_path)
+        }
 
         std::fs::create_dir_all(&t_dir)?;
         let mut option = CopyOptions::new();

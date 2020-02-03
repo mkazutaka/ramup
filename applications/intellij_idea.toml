@@ -1,10 +1,14 @@
 # see https://intellij-support.jetbrains.com/hc/en-us/articles/206544519-Directories-used-by-the-IDE-to-store-settings-caches-plugins-and-logs
-name = "intellijidea"
+name = "intellij_idea"
 restart = false
 paths = [
   "~/Library/Caches/IntelliJIdea2019.2",
   "~/Library/Logs/IntelliJIdea2019.2",
+  "~/Library/Application Support/IntelliJIdea2019.2",
+  "~/Library/Preferences/IntelliJIdea2019.2",
 
   "~/Library/Caches/IntelliJIdea2019.3",
   "~/Library/Logs/IntelliJIdea2019.3",
+  "~/Library/Application Support/IntelliJIdea2019.3",
+  "~/Library/Preferences/IntelliJIdea2019.3",
 ]
