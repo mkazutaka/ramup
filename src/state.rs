@@ -1,4 +1,4 @@
-use crate::env;
+use crate::appenv;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -12,7 +12,7 @@ pub struct State {
 impl State {
     #[allow(dead_code)]
     pub fn load() -> Self {
-        let sp = env::get_state_path();
+        let sp = appenv::state();
         if !Path::new(&sp).exists() {
             return State::default();
         }
@@ -23,7 +23,7 @@ impl State {
 
     #[allow(dead_code)]
     pub fn new_from_file() -> Result<Self> {
-        let sp = env::get_state_path();
+        let sp = appenv::state();
         if !Path::new(&sp).exists() {
             return Ok(State::default());
         }
@@ -71,7 +71,7 @@ impl State {
 
     #[allow(dead_code)]
     fn save(&self) -> Result<()> {
-        let sp = env::get_state_path();
+        let sp = appenv::state();
         if !Path::new(&sp).exists() {
             fs::File::create(&sp)?;
         }
@@ -129,13 +129,13 @@ backup_paths = [
             .join("state.toml")
             .to_string_lossy()
             .to_string();
-        std::env::set_var(env::KEY_STATE_PATH, tmp_path);
+        std::env::set_var(appenv::KEY_STATE_PATH, tmp_path);
 
         let state: State = toml::from_str(&TOML).unwrap();
         state.save().unwrap();
         let state = State::load();
         assert_eq!("/this/is/path/3", state.backup_paths.last().unwrap());
 
-        std::env::remove_var(env::KEY_STATE_PATH);
+        std::env::remove_var(appenv::KEY_STATE_PATH);
     }
 }

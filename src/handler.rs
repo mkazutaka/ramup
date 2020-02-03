@@ -1,11 +1,11 @@
+use crate::appenv;
+use crate::appfs;
 use crate::application::Application;
-use crate::env;
 use crate::maccmd::{DiskUtil, HdiUtil};
 use crate::path::AbsPath;
 use crate::ram::RAM;
 use crate::state::State;
 use anyhow::{Context, Result};
-use fs_extra::dir::CopyOptions;
 use std::convert::TryFrom;
 use std::path::Path;
 
@@ -65,9 +65,7 @@ impl Handler {
         }
 
         std::fs::create_dir_all(&t_dir)?;
-        let mut option = CopyOptions::new();
-        option.copy_inside = true;
-        fs_extra::dir::move_dir(&s_path, &t_dir, &option).with_context(|| "Failed moving files")?;
+        appfs::relocate(&s_path, &t_path)?;
         std::os::unix::fs::symlink(&t_path, &s_path)?;
 
         state.add_and_save(&s_path)?;
@@ -94,23 +92,20 @@ impl Handler {
 
     fn _restore<P: AsRef<Path>>(t_path: P, ram: &RAM, state: &mut State) -> anyhow::Result<()> {
         let t_path: &Path = t_path.as_ref();
-        let t_dir = t_path.parent().with_context(|| "There isn't parent path")?;
 
         let s_path = AbsPath::try_from(&ram.mount_path)?
             .join(&ram.name)?
             .join(&t_path)?;
 
         std::fs::remove_file(t_path).with_context(|| "Cannot Delete file")?;
-        let mut option = CopyOptions::new();
-        option.copy_inside = true;
-        fs_extra::dir::move_dir(&s_path, t_dir, &option)?;
+        appfs::relocate(&s_path, &t_path)?;
 
         state.remove_and_save(&t_path)?;
         Ok(())
     }
 
     pub fn clean(&self) -> Result<()> {
-        let sp = env::get_state_path();
+        let sp = appenv::state();
         if Path::new(&sp).exists() {
             std::fs::remove_file(&sp).with_context(|| "Failed to delete state file")?;
         }
@@ -163,7 +158,7 @@ mod tests {
 
         let dir = TempDir::new("ramup-config").unwrap();
         let path = dir.path().join("state.toml").to_string_lossy().to_string();
-        std::env::set_var(crate::env::KEY_STATE_PATH, path);
+        std::env::set_var(crate::appenv::KEY_STATE_PATH, path);
 
         let toml = format!(
             r#"
