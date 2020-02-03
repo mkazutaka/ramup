@@ -49,7 +49,7 @@ impl Handler {
         std::fs::create_dir_all(&t_dir)?;
         let mut option = CopyOptions::new();
         option.copy_inside = true;
-        fs_extra::dir::move_dir(&s_path, &t_dir, &option)?;
+        fs_extra::dir::move_dir(&s_path, &t_dir, &option).with_context(|| "Failed moving files")?;
         std::os::unix::fs::symlink(&t_path, &s_path)?;
 
         state.add_and_save(&s_path)?;
@@ -93,7 +93,10 @@ impl Handler {
     }
 
     pub fn clean(&self) -> Result<()> {
-        std::fs::remove_file(env::get_state_path())?;
+        let sp = env::get_state_path();
+        if Path::new(&sp).exists() {
+            std::fs::remove_file(&sp).with_context(|| "Failed to delete state file")?;
+        }
         Handler::unmount(&self.ram)
     }
 
