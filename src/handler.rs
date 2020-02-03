@@ -23,7 +23,6 @@ impl Handler {
 
     pub fn backup_all(&mut self) -> Result<()> {
         Handler::mount(&self.ram)?;
-
         let mut paths: Vec<String> = vec![];
         for app in &self.apps {
             for path in &app.paths {
@@ -64,17 +63,16 @@ impl Handler {
     }
 
     pub fn restore_all(&mut self) -> Result<()> {
-        Handler::_restore_all(&self.ram, &self.apps, &mut self.state)?;
-        self.clean()
-    }
-
-    fn _restore_all(ram: &RAM, apps: &[Application], state: &mut State) -> Result<()> {
-        for app in apps {
+        let mut paths: Vec<String> = vec![];
+        for app in &self.apps {
             for path in &app.paths {
-                Handler::_restore(path, ram, state)?
+                paths.push(path.clone());
             }
         }
-        Ok(())
+        for path in &paths {
+            self.restore(path)?;
+        }
+        self.clean()
     }
 
     pub fn restore<P: AsRef<Path>>(&mut self, t_path: P) -> Result<()> {
