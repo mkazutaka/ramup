@@ -23,21 +23,28 @@ impl Handler {
 
     pub fn backup_all(&mut self) -> Result<()> {
         Handler::mount(&self.ram)?;
-        Handler::_backup_all(&self.ram, &self.apps, &mut self.state)
-    }
 
-    fn _backup_all(ram: &RAM, apps: &[Application], state: &mut State) -> Result<()> {
-        for app in apps {
+        let mut paths: Vec<String> = vec![];
+        for app in &self.apps {
             for path in &app.paths {
-                Handler::_backup(path, ram, state)?
+                paths.push(path.clone());
             }
+        }
+        for path in &paths {
+            self.backup(path)?;
         }
         Ok(())
     }
 
     pub fn backup<P: AsRef<Path>>(&mut self, s_path: P) -> Result<()> {
         Handler::mount(&self.ram)?;
-        Handler::_backup(s_path, &self.ram, &mut self.state)
+        Handler::_backup(&s_path, &self.ram, &mut self.state).map_err(|e| {
+            if e.downcast_ref::<fs_extra::error::Error>().is_some() {
+                Handler::_restore(s_path, &self.ram, &mut self.state)
+                    .with_context(|| "Failed to restore");
+            }
+            e
+        })
     }
 
     fn _backup<P: AsRef<Path>>(s_path: P, ram: &RAM, state: &mut State) -> Result<()> {
