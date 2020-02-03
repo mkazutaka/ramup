@@ -14,7 +14,7 @@ pub fn relocate<S: AsRef<Path>, P: AsRef<Path>>(from: &S, to: &P) -> Result<()> 
         .progress_chars("#>-"));
 
     let handler = |process_info: TransitProcess| {
-        &pb.set_position(process_info.copied_bytes);
+        pb.set_position(process_info.copied_bytes);
         fs_extra::dir::TransitProcessResult::ContinueOrAbort
     };
 

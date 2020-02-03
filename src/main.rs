@@ -1,10 +1,10 @@
 mod appenv;
 mod appfs;
 mod application;
+mod apppath;
 mod cfg;
 mod handler;
 mod maccmd;
-mod path;
 mod ram;
 mod state;
 

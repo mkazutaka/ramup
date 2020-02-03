@@ -1,8 +1,8 @@
 use crate::appenv;
 use crate::appfs;
 use crate::application::Application;
+use crate::apppath::AbsPath;
 use crate::maccmd::{DiskUtil, HdiUtil};
-use crate::path::AbsPath;
 use crate::ram::RAM;
 use crate::state::State;
 use anyhow::{Context, Result};
