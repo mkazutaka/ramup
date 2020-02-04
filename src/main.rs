@@ -57,11 +57,8 @@ fn main() -> Result<()> {
                 let path = matches.value_of("path").with_context(|| "path not found")?;
                 sources.push(path.to_string());
             } else {
-                for app in &apps {
-                    for path in &app.paths {
-                        sources.push(path.clone());
-                    }
-                }
+                let state = state::State::load();
+                sources = state.backup_paths;
             }
             handler.restore(sources)?
         }

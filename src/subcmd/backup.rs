@@ -12,13 +12,13 @@ impl Backup {
 
     fn validate(from: &AbsPath, to: &AbsPath) -> Result<()> {
         if !&from.as_ref().exists() {
-            println!("skip: {:?}", from);
+            println!("skip: {:?}", from.to_string());
             return Ok(());
         } else if to.as_ref().exists() {
-            println!("skip: {:?}", to);
+            println!("skip: {:?}", to.to_string());
             return Ok(());
         } else {
-            println!("start: {:?}", to)
+            println!("start: {:?}", to.to_string())
         }
         Ok(())
     }

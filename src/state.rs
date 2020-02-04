@@ -6,7 +6,7 @@ use std::path::Path;
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct State {
-    backup_paths: Vec<String>,
+    pub backup_paths: Vec<String>,
 }
 
 impl State {
