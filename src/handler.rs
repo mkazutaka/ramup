@@ -1,116 +1,63 @@
-use crate::application::Application;
-use crate::env;
+use crate::appenv;
+use crate::apppath::AbsPath;
 use crate::maccmd::{DiskUtil, HdiUtil};
-use crate::path::AbsPath;
 use crate::ram::RAM;
 use crate::state::State;
+use crate::subcmd::{Backup, Restore};
 use anyhow::{Context, Result};
-use fs_extra::dir::CopyOptions;
 use std::convert::TryFrom;
 use std::path::Path;
 
 pub struct Handler {
     ram: RAM,
-    apps: Vec<Application>,
     state: State,
 }
 
 impl Handler {
-    pub fn new(ram: RAM, apps: &[Application], state: State) -> Self {
-        let apps = apps.to_vec();
-        Handler { ram, apps, state }
+    pub fn new(ram: RAM, state: State) -> Self {
+        Handler { ram, state }
     }
 
-    pub fn backup_all(&mut self) -> Result<()> {
+    pub fn backup(&mut self, sources: Vec<String>) -> Result<()> {
         Handler::mount(&self.ram)?;
-        let mut paths: Vec<String> = vec![];
-        for app in &self.apps {
-            for path in &app.paths {
-                paths.push(path.clone());
-            }
-        }
-        for path in &paths {
-            self.backup(path)?;
+
+        let target_base_path = AbsPath::try_from(&self.ram.mount_path)?.join(&self.ram.name)?;
+        for source in &sources {
+            let source = AbsPath::new(&source)?;
+            let target = target_base_path.join(&source)?;
+
+            let path = Backup::backup(&source, &target);
+            match path {
+                Ok(path) => self.state.add_and_save(path),
+                Err(err) => {
+                    if err.downcast_ref::<fs_extra::error::Error>().is_some() {
+                        println!("restore: {:?}", source.as_ref());
+                        self.restore(vec![source.to_string()])
+                            .with_context(|| "Failed to restore")
+                            .unwrap();
+                    }
+                    Err(err)
+                }
+            }?;
         }
         Ok(())
     }
 
-    pub fn backup<P: AsRef<Path>>(&mut self, s_path: P) -> Result<()> {
-        Handler::mount(&self.ram)?;
-        Handler::_backup(&s_path, &self.ram, &mut self.state).map_err(|e| {
-            if e.downcast_ref::<fs_extra::error::Error>().is_some() {
-                println!("restore: {:?}", s_path.as_ref());
-                Handler::_restore(s_path, &self.ram, &mut self.state)
-                    .with_context(|| "Failed to restore")
-                    .unwrap();
-            }
-            e
-        })
-    }
+    pub fn restore(&mut self, targets: Vec<String>) -> Result<()> {
+        let source_base_path = AbsPath::try_from(&self.ram.mount_path)?.join(&self.ram.name)?;
 
-    fn _backup<P: AsRef<Path>>(s_path: P, ram: &RAM, state: &mut State) -> Result<()> {
-        let t_path = AbsPath::try_from(&ram.mount_path)?
-            .join(&ram.name)?
-            .join(&s_path)?;
-        let t_dir = t_path.parent()?;
+        for target in &targets {
+            let source = source_base_path.join(&target)?;
+            let target = AbsPath::new(&target)?;
 
-        if !&s_path.as_ref().exists() {
-            println!("skip: {:?}", s_path.as_ref());
-            return Ok(());
-        } else if t_path.as_ref().exists() {
-            println!("skip: {:?}", t_path);
-            return Ok(());
-        } else {
-            println!("start: {:?}", t_path)
+            Restore::restore(&source, &target)?;
+            self.state.remove_and_save(target)?;
         }
-
-        std::fs::create_dir_all(&t_dir)?;
-        let mut option = CopyOptions::new();
-        option.copy_inside = true;
-        fs_extra::dir::move_dir(&s_path, &t_dir, &option).with_context(|| "Failed moving files")?;
-        std::os::unix::fs::symlink(&t_path, &s_path)?;
-
-        state.add_and_save(&s_path)?;
-        Ok(())
-    }
-
-    pub fn restore_all(&mut self) -> Result<()> {
-        let mut paths: Vec<String> = vec![];
-        for app in &self.apps {
-            for path in &app.paths {
-                paths.push(path.clone());
-            }
-        }
-        for path in &paths {
-            self.restore(path)?;
-        }
-        self.clean()
-    }
-
-    pub fn restore<P: AsRef<Path>>(&mut self, t_path: P) -> Result<()> {
-        Handler::_restore(t_path, &self.ram, &mut self.state)?;
-        Ok(())
-    }
-
-    fn _restore<P: AsRef<Path>>(t_path: P, ram: &RAM, state: &mut State) -> anyhow::Result<()> {
-        let t_path: &Path = t_path.as_ref();
-        let t_dir = t_path.parent().with_context(|| "There isn't parent path")?;
-
-        let s_path = AbsPath::try_from(&ram.mount_path)?
-            .join(&ram.name)?
-            .join(&t_path)?;
-
-        std::fs::remove_file(t_path).with_context(|| "Cannot Delete file")?;
-        let mut option = CopyOptions::new();
-        option.copy_inside = true;
-        fs_extra::dir::move_dir(&s_path, t_dir, &option)?;
-
-        state.remove_and_save(&t_path)?;
         Ok(())
     }
 
     pub fn clean(&self) -> Result<()> {
-        let sp = env::get_state_path();
+        let sp = appenv::state();
         if Path::new(&sp).exists() {
             std::fs::remove_file(&sp).with_context(|| "Failed to delete state file")?;
         }
@@ -163,7 +110,7 @@ mod tests {
 
         let dir = TempDir::new("ramup-config").unwrap();
         let path = dir.path().join("state.toml").to_string_lossy().to_string();
-        std::env::set_var(crate::env::KEY_STATE_PATH, path);
+        std::env::set_var(crate::appenv::KEY_STATE_PATH, path);
 
         let toml = format!(
             r#"
@@ -175,11 +122,11 @@ mod tests {
             mount_str
         );
         let ram = RAM::new_from_str(&toml).unwrap();
-        let mut state = State::load();
+        let state = State::load();
 
         // Backup
-        check!(Handler::mount(&ram));
-        check!(Handler::_backup(target_str, &ram, &mut state));
+        let mut handler = Handler::new(ram, state);
+        check!(handler.backup(vec![target_str.to_string()]));
         let m = check!(fs::symlink_metadata(target_str));
         assert_eq!(m.file_type().is_symlink(), true);
         assert_eq!(m.file_type().is_dir(), false);
@@ -191,11 +138,12 @@ mod tests {
         //        assert_eq!(sym_file_path, check!(fs::read_link(target_str)));
 
         // Restore
-        check!(Handler::_restore(target_str, &ram, &mut state));
+        check!(handler.restore(vec![target_str.to_string()]));
         let m = check!(fs::symlink_metadata(target_str));
         assert_eq!(m.file_type().is_symlink(), false);
         assert_eq!(m.file_type().is_dir(), true);
 
+        let ram = RAM::new_from_str(&toml).unwrap();
         check!(Handler::unmount(&ram));
     }
 }

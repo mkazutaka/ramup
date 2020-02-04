@@ -1,5 +1,5 @@
+use crate::appenv;
 use crate::application::Application;
-use crate::env;
 use crate::ram::RAM;
 use anyhow::Result;
 use serde::Deserialize;
@@ -32,7 +32,7 @@ impl Config {
     }
 
     pub fn load() -> Result<Self> {
-        let cp = env::get_config_path();
+        let cp = appenv::config();
         if Path::new(&cp).exists() {
             let c = fs::read_to_string(&cp)?;
             let config: Config = toml::from_str(&c)?;
@@ -43,11 +43,11 @@ impl Config {
     }
 
     pub fn initialize() -> Result<()> {
-        let cp = env::get_config_path();
+        let cp = appenv::config();
         if Path::new(&cp).exists() {
             return Ok(());
         }
-        let cp = env::get_config_path();
+        let cp = appenv::config();
         let mut file = File::create(&cp)?;
         file.write_all(DEFAULT_CONFIG.as_bytes())?;
         Ok(())
@@ -68,7 +68,7 @@ mod tests {
         let dir = TempDir::new("ramup_for_test").unwrap();
         let config = dir.path().join("config.toml");
         std::env::set_var(
-            env::KEY_CONFIG_PATH,
+            appenv::KEY_CONFIG_PATH,
             dir.path().join("config.toml").to_str().unwrap(),
         );
         Config::initialize().unwrap();
@@ -80,6 +80,6 @@ mod tests {
         assert_eq!(config.ram.name, "RAMDiskByRamup");
         assert_eq!(config.ram.size, 8388608);
 
-        std::env::remove_var(env::KEY_CONFIG_PATH);
+        std::env::remove_var(appenv::KEY_CONFIG_PATH);
     }
 }

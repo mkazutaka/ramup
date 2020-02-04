@@ -1,4 +1,4 @@
-use crate::env;
+use crate::appenv;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -6,36 +6,19 @@ use std::path::Path;
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct State {
-    backup_paths: Vec<String>,
+    pub backup_paths: Vec<String>,
 }
 
 impl State {
     #[allow(dead_code)]
     pub fn load() -> Self {
-        let sp = env::get_state_path();
+        let sp = appenv::state();
         if !Path::new(&sp).exists() {
             return State::default();
         }
         let c = fs::read_to_string(&sp).unwrap();
         let state: State = toml::from_str(&c).unwrap();
         state
-    }
-
-    #[allow(dead_code)]
-    pub fn new_from_file() -> Result<Self> {
-        let sp = env::get_state_path();
-        if !Path::new(&sp).exists() {
-            return Ok(State::default());
-        }
-        let c = fs::read_to_string(&sp)?;
-        let state: State = toml::from_str(&c)?;
-        Ok(state)
-    }
-
-    #[allow(dead_code)]
-    pub fn new_from_str(toml: &str) -> Result<Self> {
-        let state: State = toml::from_str(&toml)?;
-        Ok(state)
     }
 
     #[allow(dead_code)]
@@ -71,7 +54,7 @@ impl State {
 
     #[allow(dead_code)]
     fn save(&self) -> Result<()> {
-        let sp = env::get_state_path();
+        let sp = appenv::state();
         if !Path::new(&sp).exists() {
             fs::File::create(&sp)?;
         }
@@ -94,12 +77,6 @@ backup_paths = [
     "/this/is/path/3"
 ]
 "#;
-
-    #[test]
-    fn new_from_str() {
-        let state = State::new_from_str(TOML).unwrap();
-        assert_eq!("/this/is/path/1", state.backup_paths[0])
-    }
 
     #[test]
     fn add() {
@@ -129,13 +106,13 @@ backup_paths = [
             .join("state.toml")
             .to_string_lossy()
             .to_string();
-        std::env::set_var(env::KEY_STATE_PATH, tmp_path);
+        std::env::set_var(appenv::KEY_STATE_PATH, tmp_path);
 
         let state: State = toml::from_str(&TOML).unwrap();
         state.save().unwrap();
         let state = State::load();
         assert_eq!("/this/is/path/3", state.backup_paths.last().unwrap());
 
-        std::env::remove_var(env::KEY_STATE_PATH);
+        std::env::remove_var(appenv::KEY_STATE_PATH);
     }
 }
