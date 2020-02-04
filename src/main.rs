@@ -7,8 +7,9 @@ mod handler;
 mod maccmd;
 mod ram;
 mod state;
+mod subcmd;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use clap::load_yaml;
 use clap::App;
 
@@ -31,27 +32,40 @@ fn main() -> Result<()> {
         return cfg::Config::initialize();
     }
 
-    let mut handler = handler::Handler::new(ram, &apps, state);
+    let mut handler = handler::Handler::new(ram, state);
 
     if let Some(matches) = arg_matches.subcommand_matches(SUB_COMMAND_BACKUP) {
+        let mut sources: Vec<String> = vec![];
         if matches.is_present("path") {
-            if let Some(path) = matches.value_of("path") {
-                handler.backup(path)?;
-            }
+            let path = matches.value_of("path").with_context(|| "path not found")?;
+            sources.push(path.to_string());
         } else {
-            handler.backup_all()?;
+            for app in &apps {
+                for path in &app.paths {
+                    sources.push(path.clone());
+                }
+            }
         }
+
+        handler.backup(sources)?;
         return Ok(());
     }
 
     if let Some(matches) = arg_matches.subcommand_matches(SUB_COMMAND_RESTORE) {
+        let mut sources: Vec<String> = vec![];
         if matches.is_present("path") {
-            if let Some(path) = matches.value_of("path") {
-                handler.restore(path)?;
-            }
+            let path = matches.value_of("path").with_context(|| "path not found")?;
+            sources.push(path.to_string());
         } else {
-            handler.restore_all()?;
+            for app in &apps {
+                for path in &app.paths {
+                    sources.push(path.clone());
+                }
+            }
         }
+
+        handler.restore(sources)?;
+        return Ok(());
     }
 
     if arg_matches.subcommand_matches(SUB_COMMAND_CLEAN).is_some() {

@@ -22,23 +22,6 @@ impl State {
     }
 
     #[allow(dead_code)]
-    pub fn new_from_file() -> Result<Self> {
-        let sp = appenv::state();
-        if !Path::new(&sp).exists() {
-            return Ok(State::default());
-        }
-        let c = fs::read_to_string(&sp)?;
-        let state: State = toml::from_str(&c)?;
-        Ok(state)
-    }
-
-    #[allow(dead_code)]
-    pub fn new_from_str(toml: &str) -> Result<Self> {
-        let state: State = toml::from_str(&toml)?;
-        Ok(state)
-    }
-
-    #[allow(dead_code)]
     pub fn add_and_save<P: AsRef<Path>>(&mut self, added: P) -> Result<()> {
         self.add(added);
         self.save()
@@ -94,12 +77,6 @@ backup_paths = [
     "/this/is/path/3"
 ]
 "#;
-
-    #[test]
-    fn new_from_str() {
-        let state = State::new_from_str(TOML).unwrap();
-        assert_eq!("/this/is/path/1", state.backup_paths[0])
-    }
 
     #[test]
     fn add() {
