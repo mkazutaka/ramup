@@ -1,5 +1,5 @@
 use crate::appenv;
-use anyhow::Result;
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
@@ -22,33 +22,25 @@ impl State {
     }
 
     #[allow(dead_code)]
-    pub fn add_and_save<P: AsRef<Path>>(&mut self, added: P) -> Result<()> {
-        self.add(added);
-        self.save()
-    }
+    pub fn add<P: AsRef<Path>>(&mut self, path: P) -> Result<()> {
+        let path = String::from(path.as_ref().to_string_lossy());
 
-    fn add<P: AsRef<Path>>(&mut self, added: P) {
-        self.backup_paths
-            .push(added.as_ref().to_string_lossy().into());
+        if self.backup_paths.iter().any(|s| s == &path) {
+            return Ok(());
+        };
+
+        self.backup_paths.push(path);
+        self.save()
     }
 
     #[allow(dead_code)]
-    pub fn remove_and_save<P: AsRef<Path>>(&mut self, removed: P) -> Result<()> {
-        self.remove(removed)?;
-        self.save()
-    }
+    pub fn remove<P: AsRef<Path>>(&mut self, path: P) -> Result<()> {
+        let path = String::from(path.as_ref().to_string_lossy());
 
-    fn remove<P: AsRef<Path>>(&mut self, removed: P) -> Result<()> {
-        let path = removed
-            .as_ref()
-            .to_str()
-            .ok_or_else(|| anyhow::anyhow!("NoneError"))?;
-        let index = self
-            .backup_paths
-            .iter()
-            .position(|x| *x == path)
-            .ok_or_else(|| anyhow::anyhow!("NoneError"))?;
-        self.backup_paths.remove(index);
+        if let Some(index) = self.backup_paths.iter().position(|s| s == &path) {
+            self.backup_paths.remove(index);
+            self.save()?;
+        }
         Ok(())
     }
 
@@ -56,6 +48,8 @@ impl State {
     fn save(&self) -> Result<()> {
         let sp = appenv::state();
         if !Path::new(&sp).exists() {
+            let parent = Path::new(&sp).parent().with_context(|| "No Parent")?;
+            fs::create_dir_all(parent)?;
             fs::File::create(&sp)?;
         }
         let out = toml::to_string(&self)?;
@@ -74,45 +68,39 @@ mod tests {
 backup_paths = [
     "/this/is/path/1",
     "/this/is/path/2",
-    "/this/is/path/3"
 ]
 "#;
 
-    #[test]
-    fn add() {
-        let mut state: State = toml::from_str(&TOML).unwrap();
-        state.add("/this/is/new/path");
-        assert_eq!("/this/is/new/path", state.backup_paths.last().unwrap());
-    }
-
-    #[test]
-    fn remove() {
-        let mut state: State = toml::from_str(&TOML).unwrap();
-        assert_eq!(3, state.backup_paths.len());
-        assert_eq!("/this/is/path/3", state.backup_paths.last().unwrap());
-
-        let removed_path = Path::new("/this/is/path/3");
-        state.remove(removed_path).unwrap();
-        assert_eq!(2, state.backup_paths.len());
-        assert_eq!("/this/is/path/2", state.backup_paths.last().unwrap());
+    fn set_up() {
+        let state_path = TempDir::new("ramup").unwrap();
+        let state_path = state_path.path().join("state.config");
+        std::env::set_var(appenv::KEY_STATE_PATH, state_path);
     }
 
     #[test]
     #[serial]
-    fn save() {
-        let tmp_dir = TempDir::new("ramup").unwrap();
-        let tmp_path = tmp_dir
-            .path()
-            .join("state.toml")
-            .to_string_lossy()
-            .to_string();
-        std::env::set_var(appenv::KEY_STATE_PATH, tmp_path);
+    fn add() {
+        set_up();
 
-        let state: State = toml::from_str(&TOML).unwrap();
-        state.save().unwrap();
-        let state = State::load();
-        assert_eq!("/this/is/path/3", state.backup_paths.last().unwrap());
+        let mut state: State = State::load();
+        assert_eq!(0, state.backup_paths.len());
+        state.add("/this/is/new/path").unwrap();
 
-        std::env::remove_var(appenv::KEY_STATE_PATH);
+        let state: State = State::load();
+        assert_eq!("/this/is/new/path", state.backup_paths.last().unwrap());
+    }
+
+    #[test]
+    #[serial]
+    fn remove() {
+        set_up();
+
+        let mut state: State = toml::from_str(&TOML).unwrap();
+        assert_eq!("/this/is/path/2", state.backup_paths.last().unwrap());
+        state.remove("/this/is/path/2").unwrap();
+
+        let state: State = State::load();
+        assert_eq!(1, state.backup_paths.len());
+        assert_eq!("/this/is/path/1", state.backup_paths.last().unwrap());
     }
 }
