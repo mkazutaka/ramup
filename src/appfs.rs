@@ -28,7 +28,6 @@ pub fn relocate<S: AsRef<Path>, P: AsRef<Path>>(from: &S, to: &P) -> Result<()> 
 mod tests {
     use super::*;
     use serial_test::serial;
-    use std::fs::File;
     use tempdir::TempDir;
 
     #[test]

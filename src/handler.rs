@@ -28,7 +28,7 @@ impl Handler {
 
             let path = Backup::backup(&source, &target);
             match path {
-                Ok(path) => self.state.add_and_save(path),
+                Ok(path) => self.state.add(path),
                 Err(err) => {
                     if err.downcast_ref::<fs_extra::error::Error>().is_some() {
                         println!("restore: {:?}", source.as_ref());
@@ -51,7 +51,7 @@ impl Handler {
             let target = AbsPath::new(&target)?;
 
             Restore::restore(&source, &target)?;
-            self.state.remove_and_save(target)?;
+            self.state.remove(target)?;
         }
         Ok(())
     }

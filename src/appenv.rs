@@ -2,7 +2,7 @@ use shellexpand;
 use std::env;
 
 pub static KEY_CONFIG_PATH: &str = "RAMUP_CONFIG_PATH";
-pub static KEY_STATE_PATH: &str = "RAMUP_CONFIG_PATH";
+pub static KEY_STATE_PATH: &str = "RAMUP_STATE_PATH";
 
 pub fn config() -> String {
     let default = shellexpand::tilde("~/.config/ramup/config.toml");
