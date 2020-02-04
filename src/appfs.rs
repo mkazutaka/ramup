@@ -10,8 +10,9 @@ pub fn relocate<S: AsRef<Path>, P: AsRef<Path>>(from: &S, to: &P) -> Result<()> 
     let size = fs_extra::dir::get_size(from)?;
     let pb = ProgressBar::new(size);
     pb.set_style(ProgressStyle::default_bar()
-        .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {bytes}/{total_bytes} ({eta})")
+        .template("{wide_msg:.bold.dim} {spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {bytes}/{total_bytes} ({eta})")
         .progress_chars("#>-"));
+    pb.set_message(&from.as_ref().to_str().expect("failed to convert str"));
 
     let handler = |process_info: TransitProcess| {
         pb.set_position(process_info.copied_bytes);
