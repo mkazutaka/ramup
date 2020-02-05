@@ -1,10 +1,10 @@
 name: ramup
-version: "1.0"
+version: "0.1.0"
 author: mkazutaka <paper.sheet.kami@gmail.com>
-about: backup to RAMDisk; restore from RAMDisk
+about:  A command supports your work on RAMDisk
 subcommands:
 - init:
-    about: create init file for ramup
+    about: create config file for ramup
 - backup:
     about: backup path to RAMDisk
     args:

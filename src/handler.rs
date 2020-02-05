@@ -33,10 +33,9 @@ impl Handler {
                     if err.downcast_ref::<fs_extra::error::Error>().is_some() {
                         println!("restore: {:?}", source.as_ref());
                         self.restore(vec![source.to_string()])
-                            .with_context(|| "Failed to restore")
-                            .unwrap();
+                            .with_context(|| "Failed to restore")?;
                     }
-                    Err(err)
+                    Ok(())
                 }
             }?;
         }
