@@ -1,4 +1,5 @@
 use crate::appenv;
+use crate::apperror::FileSystemError;
 use crate::apppath::AbsPath;
 use crate::maccmd::{DiskUtil, HdiUtil};
 use crate::ram::RAM;
@@ -49,8 +50,16 @@ impl Handler {
             let source = source_base_path.join(&target)?;
             let target = AbsPath::new(&target)?;
 
-            Restore::restore(&source, &target)?;
-            self.state.remove(target)?;
+            match Restore::restore(&source, &target) {
+                Ok(target) => self.state.remove(target),
+                Err(err) => {
+                    if err.downcast_ref::<FileSystemError>().is_some() {
+                        self.state.remove(target)?;
+                        continue;
+                    }
+                    Err(err)
+                }
+            }?;
         }
         Ok(())
     }
