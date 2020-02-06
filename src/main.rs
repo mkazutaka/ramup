@@ -1,4 +1,5 @@
 mod appenv;
+mod apperror;
 mod appfs;
 mod application;
 mod apppath;

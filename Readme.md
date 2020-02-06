@@ -9,10 +9,7 @@ only MacOS
 ## Install
 
 ```sh
-$ git clone git@github.com:mkazutaka/ramup.git
-$ cd ramup
-$ cargo build 
-$ cargo run -- backup -p ~/example
+$ cargo install ramup
 ```
 
 ### Backup

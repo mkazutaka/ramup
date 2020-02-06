@@ -1,4 +1,5 @@
 use crate::appenv;
+use crate::apperror;
 use crate::apppath::AbsPath;
 use crate::maccmd::{DiskUtil, HdiUtil};
 use crate::ram::RAM;
@@ -26,14 +27,16 @@ impl Handler {
             let source = AbsPath::new(&source)?;
             let target = target_base_path.join(&source)?;
 
-            let path = Backup::backup(&source, &target);
-            match path {
+            match Backup::backup(&source, &target) {
                 Ok(path) => self.state.add(path),
                 Err(err) => {
-                    if err.downcast_ref::<fs_extra::error::Error>().is_some() {
-                        println!("restore: {:?}", source.as_ref());
-                        self.restore(vec![source.to_string()])
-                            .with_context(|| "Failed to restore")?;
+                    if err.downcast_ref::<apperror::FileProgressError>().is_some() {
+                        println!("Failed to backup: {:?}", err);
+                        self.state.remove(target)?;
+                        continue;
+                    }
+                    if err.downcast_ref::<apperror::FileSystemError>().is_some() {
+                        continue;
                     }
                     Ok(())
                 }
@@ -49,8 +52,20 @@ impl Handler {
             let source = source_base_path.join(&target)?;
             let target = AbsPath::new(&target)?;
 
-            Restore::restore(&source, &target)?;
-            self.state.remove(target)?;
+            match Restore::restore(&source, &target) {
+                Ok(target) => self.state.remove(target),
+                Err(err) => {
+                    if err.downcast_ref::<apperror::FileProgressError>().is_some() {
+                        println!("Failed to restore: {:?}", err);
+                        continue;
+                    }
+                    if err.downcast_ref::<apperror::FileSystemError>().is_some() {
+                        self.state.remove(target)?;
+                        continue;
+                    }
+                    Err(err)
+                }
+            }?;
         }
         Ok(())
     }
