@@ -27,12 +27,11 @@ impl Handler {
             let source = AbsPath::new(&source)?;
             let target = target_base_path.join(&source)?;
 
-            let path = Backup::backup(&source, &target);
-            match path {
+            match Backup::backup(&source, &target) {
                 Ok(path) => self.state.add(path),
                 Err(err) => {
-                    if err.downcast_ref::<fs_extra::error::Error>().is_some() {
-                        println!("restore: {:?}", source.as_ref());
+                    println!("Failed to backup: {:?}", err);
+                    if err.downcast_ref::<FileSystemError>().is_some() {
                         self.restore(vec![source.to_string()])
                             .with_context(|| "Failed to restore")?;
                     }

@@ -1,3 +1,4 @@
+use crate::apperror::FileSystemError;
 use crate::appfs;
 use crate::apppath::AbsPath;
 use anyhow::Result;
@@ -12,14 +13,9 @@ impl Backup {
 
     fn validate(from: &AbsPath, to: &AbsPath) -> Result<()> {
         if !&from.as_ref().exists() {
-            println!("skip: {:?}", from.to_string());
-            return Err(anyhow::anyhow!("Skip"));
-        } else if to.as_ref().exists() {
-            println!("skip: {:?}", to.to_string());
-            return Err(anyhow::anyhow!("Skip"));
-        } else {
-            println!("start: {:?}", to.to_string())
-        }
+            return Err(anyhow::anyhow!(FileSystemError::NotExist(from.to_string())));
+        };
+
         Ok(())
     }
 
