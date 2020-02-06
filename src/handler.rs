@@ -52,6 +52,7 @@ impl Handler {
             match Restore::restore(&source, &target) {
                 Ok(target) => self.state.remove(target),
                 Err(err) => {
+                    println!("Failed to restore: {:?}", err);
                     if err.downcast_ref::<FileSystemError>().is_some() {
                         self.state.remove(target)?;
                         continue;
