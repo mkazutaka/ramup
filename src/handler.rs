@@ -1,5 +1,5 @@
 use crate::appenv;
-use crate::apperror::FileSystemError;
+use crate::apperror;
 use crate::apppath::AbsPath;
 use crate::maccmd::{DiskUtil, HdiUtil};
 use crate::ram::RAM;
@@ -30,10 +30,13 @@ impl Handler {
             match Backup::backup(&source, &target) {
                 Ok(path) => self.state.add(path),
                 Err(err) => {
-                    println!("Failed to backup: {:?}", err);
-                    if err.downcast_ref::<FileSystemError>().is_some() {
-                        self.restore(vec![source.to_string()])
-                            .with_context(|| "Failed to restore")?;
+                    if err.downcast_ref::<apperror::FileProgressError>().is_some() {
+                        println!("Failed to backup: {:?}", err);
+                        self.state.remove(target)?;
+                        continue;
+                    }
+                    if err.downcast_ref::<apperror::FileSystemError>().is_some() {
+                        continue;
                     }
                     Ok(())
                 }
@@ -52,8 +55,11 @@ impl Handler {
             match Restore::restore(&source, &target) {
                 Ok(target) => self.state.remove(target),
                 Err(err) => {
-                    println!("Failed to restore: {:?}", err);
-                    if err.downcast_ref::<FileSystemError>().is_some() {
+                    if err.downcast_ref::<apperror::FileProgressError>().is_some() {
+                        println!("Failed to restore: {:?}", err);
+                        continue;
+                    }
+                    if err.downcast_ref::<apperror::FileSystemError>().is_some() {
                         self.state.remove(target)?;
                         continue;
                     }

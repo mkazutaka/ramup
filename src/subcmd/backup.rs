@@ -11,7 +11,7 @@ impl Backup {
         Backup::_backup(from, to)
     }
 
-    fn validate(from: &AbsPath, to: &AbsPath) -> Result<()> {
+    fn validate(from: &AbsPath, _to: &AbsPath) -> Result<()> {
         if !&from.as_ref().exists() {
             return Err(anyhow::anyhow!(FileSystemError::NotExist(from.to_string())));
         };

@@ -1,6 +1,6 @@
 [package]
 name = "ramup"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["mkazutaka <paper.sheet.kami@gmail.com>"]
 description = "A command supports your work on RAMDisk"
 edition = "2018"
@@ -26,6 +26,7 @@ anyhow = "1.0"
 thiserror = "1.0"
 path_abs = "0.5"
 indicatif = "0.14"
+console = "0.9"
 
 [dev-dependencies]
 tempfile = "3"
