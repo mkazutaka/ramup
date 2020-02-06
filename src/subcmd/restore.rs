@@ -11,7 +11,7 @@ impl Restore {
         Restore::_restore(from, to)
     }
 
-    fn validate(_from: &AbsPath, to: &AbsPath) -> Result<()> {
+    fn validate(from: &AbsPath, to: &AbsPath) -> Result<()> {
         if !to.as_ref().exists() {
             return Err(anyhow::anyhow!(FileSystemError::NotExist(to.to_string())));
         }
@@ -25,12 +25,16 @@ impl Restore {
             )));
         }
 
+        if !from.as_ref().exists() {
+            return Err(anyhow::anyhow!(FileSystemError::NotExist(from.to_string())));
+        }
+
         Ok(())
     }
 
     fn _restore(from: &AbsPath, to: &AbsPath) -> Result<String> {
         std::fs::remove_file(to).with_context(|| "Cannot Delete file")?;
         appfs::relocate(&from, &to).with_context(|| "cannot relocate file")?;
-        Ok(from.to_string())
+        Ok(to.to_string())
     }
 }

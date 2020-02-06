@@ -1,8 +1,7 @@
 use anyhow::{Context, Result};
+use path_abs::PathInfo;
 use serde::export::TryFrom;
-use shellexpand::tilde;
-use std::env;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug)]
 pub struct AbsPath {
@@ -12,19 +11,7 @@ pub struct AbsPath {
 impl AbsPath {
     #[allow(dead_code)]
     pub fn new<P: AsRef<Path>>(p: P) -> Result<Self> {
-        let p = p.as_ref().to_string_lossy();
-        let p = tilde(&p);
-
-        if p.find('~').is_some() {
-            return Err(anyhow::anyhow!("Invalid Path"));
-        }
-
-        let p = String::from(p);
-        let p = Path::new(&p);
-        let p = match &p.has_root() {
-            true => p.to_path_buf(),
-            false => env::current_dir()?.join(p),
-        };
+        let p = AbsPath::expand(p).expect("|| Failed to expand Path");
 
         Ok(AbsPath {
             path: String::from(p.to_string_lossy()),
@@ -44,8 +31,12 @@ impl AbsPath {
 
     #[allow(dead_code)]
     pub fn join<P: AsRef<Path>>(&self, path: P) -> Result<Self> {
-        let path = if path.as_ref().has_root() {
-            let path = path.as_ref().strip_prefix("/")?;
+        let path = String::from(path.as_ref().to_string_lossy());
+        let path =
+            AbsPath::expand(&path).with_context(|| format!("Failed to expand Path: {}", path))?;
+
+        let path = if path.has_root() {
+            let path = path.strip_prefix("/")?;
             Path::new(&self.path).join(path)
         } else {
             Path::new(&self.path).join(path)
@@ -54,6 +45,41 @@ impl AbsPath {
         Ok(AbsPath {
             path: String::from(path.to_string_lossy()),
         })
+    }
+
+    fn expand<P: AsRef<Path>>(path: P) -> Result<PathBuf> {
+        let p = String::from(path.as_ref().to_string_lossy());
+        let p = p.replace("/./", "/");
+        let p = Path::new(&p);
+
+        if p.starts_with("..") {
+            let current = std::env::current_dir().with_context(|| "Failed to get Current Dir")?;
+            let parent = current
+                .parent()
+                .with_context(|| "Failed to get Current Dir")?;
+            let p = p
+                .strip_prefix("..")
+                .with_context(|| "Failed to strip `..` from path")?;
+            return Ok(parent.join(p));
+        };
+
+        if p.starts_with(".") {
+            let current = std::env::current_dir().with_context(|| "Failed to get Current Dir")?;
+            let p = p
+                .strip_prefix(".")
+                .with_context(|| "Failed to strip `.` from path")?;
+            return Ok(current.join(p));
+        };
+
+        if p.starts_with("~") {
+            let home = std::env::var("HOME").with_context(|| "Failed to get home Dir")?;
+            let p = p
+                .strip_prefix("~")
+                .with_context(|| "Failed to strip `~` from path")?;
+            return Ok(Path::new(&home).join(p));
+        };
+
+        Ok(p.to_path_buf())
     }
 }
 
@@ -115,30 +141,15 @@ mod tests {
 
     #[test]
     #[serial]
-    fn new() {
-        let home = env::var("HOME").unwrap();
-        let current = env::current_dir().unwrap();
-
-        let abs = AbsPath::new("~/./hoge").unwrap();
-        assert_eq!(format!("{}/./hoge", home), abs.to_string());
-        let abs = AbsPath::new("hoge").unwrap();
-        assert_eq!(
-            format!("{}/hoge", current.to_str().unwrap()),
-            abs.to_string()
-        );
-    }
-
-    #[test]
-    #[serial]
     fn from() {
         let home = env::var("HOME").unwrap();
 
         let abs = AbsPath::try_from("~/./hoge").unwrap();
-        assert_eq!(format!("{}/./hoge", home), abs.to_string());
+        assert_eq!(format!("{}/hoge", home), abs.to_string());
         let abs = AbsPath::try_from(Path::new("~/./hoge")).unwrap();
-        assert_eq!(format!("{}/./hoge", home), abs.to_string());
+        assert_eq!(format!("{}/hoge", home), abs.to_string());
         let abs = AbsPath::try_from(&String::from("~/./hoge")).unwrap();
-        assert_eq!(format!("{}/./hoge", home), abs.to_string());
+        assert_eq!(format!("{}/hoge", home), abs.to_string());
     }
 
     #[test]
@@ -155,12 +166,36 @@ mod tests {
     fn join() {
         let home = env::var("HOME").unwrap();
 
-        let abs = AbsPath::try_from("~/./hoge").unwrap();
+        let abs = AbsPath::try_from("~/././hoge").unwrap();
         let abs = abs.join("fuga").unwrap();
-        assert_eq!(format!("{}/./hoge/fuga", home), abs.to_string());
+        assert_eq!(format!("{}/hoge/fuga", home), abs.to_string());
 
         let abs = AbsPath::try_from("~/./hoge").unwrap();
         let abs = abs.join("/fuga").unwrap();
-        assert_eq!(format!("{}/./hoge/fuga", home), abs.to_string());
+        assert_eq!(format!("{}/hoge/fuga", home), abs.to_string());
+    }
+
+    #[test]
+    #[serial]
+    fn expand() {
+        let home = env::var("HOME").unwrap();
+        let current = env::current_dir().unwrap();
+        let parent = current.parent().unwrap();
+
+        let expect = Path::new(&current);
+        let actual = AbsPath::expand(".").unwrap();
+        assert_eq!(expect, actual);
+
+        let expect = parent.to_path_buf();
+        let actual = AbsPath::expand("..").unwrap();
+        assert_eq!(expect, actual);
+
+        let expect = Path::new(&current).join("hoge");
+        let actual = AbsPath::expand("./hoge").unwrap();
+        assert_eq!(expect, actual);
+
+        let expect = Path::new(&home).join("hoge");
+        let actual = AbsPath::expand("~/hoge").unwrap();
+        assert_eq!(expect, actual);
     }
 }

@@ -3,12 +3,12 @@ name = "intellij-idea"
 restart = false
 paths = [
   "~/Library/Caches/IntelliJIdea2019.2",
-  "~/Library/Logs/IntelliJIdea2019.2",
-  "~/Library/Application Support/IntelliJIdea2019.2",
-  "~/Library/Preferences/IntelliJIdea2019.2",
+#  "~/Library/Logs/IntelliJIdea2019.2",
+#  "~/Library/Application Support/IntelliJIdea2019.2",
+#  "~/Library/Preferences/IntelliJIdea2019.2",
 
   "~/Library/Caches/IntelliJIdea2019.3",
-  "~/Library/Logs/IntelliJIdea2019.3",
-  "~/Library/Application Support/IntelliJIdea2019.3",
-  "~/Library/Preferences/IntelliJIdea2019.3",
+#  "~/Library/Logs/IntelliJIdea2019.3",
+#  "~/Library/Application Support/IntelliJIdea2019.3",
+#  "~/Library/Preferences/IntelliJIdea2019.3",
 ]
