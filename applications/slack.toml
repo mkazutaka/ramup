@@ -1,0 +1,5 @@
+name = "slack"
+restart = false
+paths = [
+  "~/Library/Application Support/Slack/Cache",
+]

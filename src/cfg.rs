@@ -8,14 +8,13 @@ use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 
-static DEFAULT_CONFIG: &str = r#"
-    [ram]
-    name = "RAMDiskByRamup"
-    size = 8388608
+static DEFAULT_CONFIG: &str = r#"[ram]
+name = "RAMDiskByRamup"
+size = 8388608
 
-    # Add your's first application
-    # [[applications]]
-    # name = "example"
+# Add your's first application
+# [[applications]]
+# name = "example"
 "#;
 
 #[derive(Debug, Deserialize, Default)]

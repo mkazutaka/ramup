@@ -1,4 +1,4 @@
-name = "google_chrome"
+name = "google-chrome"
 restart = false
 paths = [
   "~/Library/Caches/Google/Chrome"

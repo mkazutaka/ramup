@@ -47,7 +47,7 @@ size = 8388608
 # Application Settings
 [[applications]]
 # see: https://github.com/mkazutaka/ramup/tree/master/applications
-name = "google_chrome"
+name = "google-chrome"
 
 # You can also add your origin settings
 [[applications]]
