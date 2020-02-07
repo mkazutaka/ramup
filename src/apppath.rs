@@ -31,9 +31,7 @@ impl AbsPath {
 
     #[allow(dead_code)]
     pub fn join<P: AsRef<Path>>(&self, path: P) -> Result<Self> {
-        let path = String::from(path.as_ref().to_string_lossy());
-        let path =
-            AbsPath::expand(&path).with_context(|| format!("Failed to expand Path: {}", path))?;
+        let path = path.as_ref();
 
         let path = if path.has_root() {
             let path = path.strip_prefix("/")?;
@@ -63,7 +61,7 @@ impl AbsPath {
             return Ok(parent.join(p));
         };
 
-        if p.starts_with(".") {
+        if p.starts_with("./") {
             let current = std::env::current_dir().with_context(|| "Failed to get Current Dir")?;
             let p = p
                 .strip_prefix(".")
@@ -78,6 +76,11 @@ impl AbsPath {
                 .with_context(|| "Failed to strip `~` from path")?;
             return Ok(Path::new(&home).join(p));
         };
+
+        if !p.starts_with("/") {
+            let current = std::env::current_dir().with_context(|| "Failed to get Current Dir")?;
+            return Ok(current.join(p));
+        }
 
         Ok(p.to_path_buf())
     }
@@ -192,6 +195,10 @@ mod tests {
 
         let expect = Path::new(&current).join("hoge");
         let actual = AbsPath::expand("./hoge").unwrap();
+        assert_eq!(expect, actual);
+
+        let expect = Path::new(&current).join(".hoge");
+        let actual = AbsPath::expand(".hoge").unwrap();
         assert_eq!(expect, actual);
 
         let expect = Path::new(&home).join("hoge");
