@@ -1,10 +1,12 @@
 # ramup
 
-Support your work on RAMDisk
 
-only MacOS
+Support your work on RAMDisk (only for MacOS)
 
 ![](https://github.com/mkazutaka/ramup/workflows/CI/badge.svg)
+
+![Feb-08-2020 12-10-28](https://user-images.githubusercontent.com/4601360/74078309-2ff91d80-4a6c-11ea-8ded-dd46ba4fdbda.gif)
+
 
 ## Install
 
