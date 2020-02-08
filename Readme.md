@@ -1,7 +1,7 @@
 # ramup
 
 
-Support your work on RAMDisk (only for MacOS)
+Backup your work on RAMDisk (only for MacOS)
 
 ![](https://github.com/mkazutaka/ramup/workflows/CI/badge.svg)
 
