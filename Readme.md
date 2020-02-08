@@ -45,7 +45,7 @@ name = "RAMDiskByRamup"
 size = 8388608
 
 # Application Settings
-[[applications]]
+[[application]]
 # see: https://github.com/mkazutaka/ramup/tree/master/applications
 name = "google-chrome"
 

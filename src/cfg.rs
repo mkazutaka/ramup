@@ -13,7 +13,7 @@ name = "RAMDiskByRamup"
 size = 8388608
 
 # Add your's first application
-# [[applications]]
+# [[application]]
 # name = "example"
 "#;
 
@@ -21,6 +21,7 @@ size = 8388608
 #[serde(default)]
 pub struct Config {
     pub ram: RAM,
+    #[serde(alias = "application")]
     pub applications: Vec<Application>,
 }
 
@@ -63,15 +64,15 @@ mod tests {
 
     #[test]
     #[serial]
-    fn create_file() {
+    fn initialize() {
         let dir = TempDir::new("ramup_for_test").unwrap();
         let config = dir.path().join("config.toml");
         std::env::set_var(
             appenv::KEY_CONFIG_PATH,
             dir.path().join("config.toml").to_str().unwrap(),
         );
-        Config::initialize().unwrap();
 
+        Config::initialize().unwrap();
         let mut file = File::open(&config).unwrap();
         let mut contents = String::new();
         file.read_to_string(&mut contents).unwrap();
