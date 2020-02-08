@@ -14,6 +14,9 @@ pub enum FileSystemError {
     #[error("Failed to get metadata: {0}")]
     FailedToGetMetaData(String),
 
+    #[error("File is already symbolic link: {0}")]
+    FileIsAlreadySymbolicLink(String),
+
     #[error("File is not symbolic link: {0}")]
     NotSymbolicLink(String),
 }

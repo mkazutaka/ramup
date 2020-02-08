@@ -1,6 +1,6 @@
 [package]
 name = "ramup"
-version = "0.1.2"
+version = "0.1.3"
 authors = ["mkazutaka <paper.sheet.kami@gmail.com>"]
 description = "A command supports your work on RAMDisk"
 edition = "2018"

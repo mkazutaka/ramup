@@ -1,7 +1,7 @@
 use crate::apperror::FileSystemError;
 use crate::appfs;
 use crate::apppath::AbsPath;
-use anyhow::Result;
+use anyhow::{Context, Result};
 
 pub struct Backup {}
 
@@ -15,6 +15,14 @@ impl Backup {
         if !&from.as_ref().exists() {
             return Err(anyhow::anyhow!(FileSystemError::NotExist(from.to_string())));
         };
+
+        let from_meta = std::fs::symlink_metadata(&from)
+            .with_context(|| FileSystemError::FailedToGetMetaData(from.to_string()))?;
+        if from_meta.file_type().is_symlink() {
+            return Err(anyhow::anyhow!(FileSystemError::FileIsAlreadySymbolicLink(
+                from.to_string()
+            )));
+        }
 
         Ok(())
     }
