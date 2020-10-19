@@ -26,7 +26,7 @@ anyhow = "1.0"
 thiserror = "1.0"
 path_abs = "0.5"
 indicatif = "0.14"
-console = "0.9"
+console = "0.13"
 
 [dev-dependencies]
 tempfile = "3"
